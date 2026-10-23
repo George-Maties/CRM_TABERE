@@ -218,3 +218,7 @@ __marimo__/
 
 # Streamlit
 .streamlit/secrets.toml
+
+# Django (CRM Tabere)
+staticfiles/
+media/
