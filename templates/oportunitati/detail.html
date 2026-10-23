@@ -68,11 +68,6 @@
               {# Lost: the reason, saved as a note. Shown only for "Pierdut". #}
               <div data-show-if="{{ status_form.status.id_for_label }}=pierduta">
                 {% include "components/form_field.html" with field=status_form.reason %}
-                {% if opportunity.owner %}
-                  <p class="form-text mt-n2 mb-3">
-                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Oportunitatea rămâne fără responsabil ({{ opportunity.owner|display_name }}).
-                  </p>
-                {% endif %}
               </div>
               <button type="submit" class="btn btn-primary btn-sm">Salvează statusul</button>
             </form>
@@ -89,7 +84,7 @@
               <dd><a href="{{ opportunity.camp.get_absolute_url }}">{{ opportunity.camp.name }}</a></dd>
             {% endif %}
             <dt>Responsabil</dt>
-            <dd>{% if opportunity.owner %}{{ opportunity.owner|display_name }}{% else %}<span class="text-body-secondary">Nimeni (pierdut)</span>{% endif %}</dd>
+            <dd>{{ opportunity.owner|display_name }}</dd>
             <dt>Creată</dt>
             <dd>{{ opportunity.created_at|date:"j F Y"|lower }}{% if opportunity.created_by %} de {{ opportunity.created_by|display_name }}{% endif %}</dd>
           </dl>

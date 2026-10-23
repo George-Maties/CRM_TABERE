@@ -7,7 +7,9 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from apps.accounts.roles import sellers_and_founders
 from apps.contacte.models import Contact
+from apps.core.templatetags.ui import display_name
 
 from .forms import NoteForm, OpportunityForm, StatusForm
 from .models import Opportunity, Status
@@ -32,34 +34,62 @@ class OpportunityListView(PermissionRequiredMixin, VisibleOpportunityMixin, List
     def get_queryset(self):
         opportunities = super().get_queryset()
         self.query = self.request.GET.get("q", "").strip()
-        self.mine = self.request.GET.get("ale_mele") == "1"
         self.status = self.request.GET.get("status", "")
+        self.can_see_all = self.request.user.has_perm("oportunitati.view_all_opportunities")
+        # Seller filter: only for roles that see everyone's opportunities
+        self.owner = self.request.GET.get("responsabil", "") if self.can_see_all else ""
         if self.query:
             opportunities = opportunities.filter(contact__name__icontains=self.query)
-        if self.mine:
-            opportunities = opportunities.filter(owner=self.request.user)
-        # Counts per status ignore the status filter itself, so every tab shows its number.
-        self.counts = dict(
-            opportunities.order_by()
-            .values_list("status")
-            .annotate(total=Count("id", distinct=True))
+        # Each row of tabs counts with the other row's filter but not its own,
+        # so every tab shows how many it would list.
+        by_owner = opportunities.filter(owner=self.owner) if self.owner.isdigit() else opportunities
+        by_status = (
+            opportunities.filter(status=self.status)
+            if self.status in Status.values
+            else opportunities
         )
+        self.counts = self.count_by(by_owner, "status")
+        self.owner_counts = self.count_by(by_status, "owner") if self.can_see_all else {}
         if self.status in Status.values:
-            opportunities = opportunities.filter(status=self.status)
-        return opportunities
+            return by_owner.filter(status=self.status)
+        return by_owner
+
+    @staticmethod
+    def count_by(opportunities, field):
+        return dict(
+            opportunities.order_by().values_list(field).annotate(total=Count("id", distinct=True))
+        )
 
     def get_context_data(self, **kwargs):
+        total = sum(self.counts.values())
         status_tabs = [
-            {"value": value, "label": label, "count": self.counts.get(value, 0)}
+            {"value": None, "label": "Toate", "count": total, "active": not self.status}
+        ] + [
+            {
+                "value": value,
+                "label": label,
+                "count": self.counts.get(value, 0),
+                "active": value == self.status,
+            }
             for value, label in Status.choices
+        ]
+        owner_tabs = [
+            {
+                "value": str(person.pk),
+                "label": display_name(person),
+                "count": self.owner_counts.get(person.pk, 0),
+                "active": str(person.pk) == self.owner,
+            }
+            for person in (sellers_and_founders() if self.can_see_all else [])
         ]
         return super().get_context_data(
             query=self.query,
-            mine=self.mine,
+            owner=self.owner,
+            owner_tabs=owner_tabs,
             status=self.status,
             status_tabs=status_tabs,
-            total=sum(self.counts.values()),
-            can_see_all=self.request.user.has_perm("oportunitati.view_all_opportunities"),
+            total=total,
+            can_see_all=self.can_see_all,
             **kwargs,
         )
 
@@ -160,9 +190,6 @@ class StatusUpdateView(OpportunityActionView):
         if camp:
             message += f" Contactul {opportunity.contact.name} a fost adăugat la „{camp.name}”."
         messages.success(request, message)
-        # A seller who loses an opportunity is taken off it, so they can't open it any more.
-        if not Opportunity.objects.visible_to(request.user).filter(pk=opportunity.pk).exists():
-            return redirect("oportunitati:list")
         return redirect(opportunity)
 
 

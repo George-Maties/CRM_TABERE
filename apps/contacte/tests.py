@@ -68,6 +68,41 @@ def test_teacher_is_a_contact_kind(seller_client):
     assert Contact.objects.get(name="Prof. Ana Vasile").get_kind_display() == "Profesor"
 
 
+def test_only_parent_and_teacher_kinds(seller_client):
+    assert Contact.Kind.choices == [("parinte", "Părinte"), ("profesor", "Profesor")]
+
+    response = seller_client.post(reverse("contacte:create"), {"name": "Firma X", "kind": "firma"})
+
+    assert response.context["form"].errors["kind"]
+
+
+def test_contact_filters_are_tabs_with_counts(founder_client, seller, contact):
+    teacher = Contact.objects.create(name="Prof. Ion Pop", kind=Contact.Kind.TEACHER)
+    teacher.assignees.add(seller)
+    Contact.objects.create(name="Mihai Popa", kind=Contact.Kind.TEACHER)
+
+    response = founder_client.get(reverse("contacte:list"), {"tip": "profesor"})
+
+    assert {c.name for c in response.context["contact_list"]} == {"Prof. Ion Pop", "Mihai Popa"}
+    kinds = {tab["label"]: tab["count"] for tab in response.context["kind_tabs"]}
+    assert kinds == {"Toate": 3, "Părinte": 1, "Profesor": 2}
+    # Person tabs count within the chosen kind.
+    people = {tab["label"]: tab["count"] for tab in response.context["assignee_tabs"]}
+    assert people["Neatribuite"] == 1 and people["vilma"] == 1
+    page = response.content.decode()
+    assert 'data-auto-search="rezultate"' in page and ">Caută</button>" not in page
+    assert 'class="status-tabs-divider"' in page
+
+
+def test_seller_sees_only_kind_tabs(seller_client, seller, other_seller, contact):
+    contact.assignees.add(seller)
+
+    response = seller_client.get(reverse("contacte:list"), {"atribuit": other_seller.pk})
+
+    assert list(response.context["contact_list"]) == [contact]
+    assert response.context["assignee_tabs"] == []
+
+
 def test_seller_sees_only_contacts_assigned_to_them(seller_client, seller, other_seller):
     mine = Contact.objects.create(name="Al meu")
     mine.assignees.add(seller)
@@ -106,21 +141,6 @@ def test_founder_sees_all_contacts_and_filters_unassigned(founder_client, seller
     assert len(everyone.context["contact_list"]) == 2
     assert list(unassigned.context["contact_list"]) == [contact]
     assert [c.name for c in sellers.context["contact_list"]] == ["Mihai Popa"]
-
-
-def test_founder_filters_own_contacts(founder_client, founder, seller, contact, make_opportunity):
-    assigned = Contact.objects.create(name="Al Paulei")
-    assigned.assignees.add(founder)
-    Contact.objects.create(name="Al Vilmei").assignees.add(seller)
-    make_opportunity(founder)
-
-    response = founder_client.get(reverse("contacte:list"), {"ale_mele": "1"})
-
-    assert list(response.context["contact_list"]) == [assigned, contact]
-
-
-def test_seller_has_no_mine_switch(seller_client):
-    assert "ale-mele" not in seller_client.get(reverse("contacte:list")).content.decode()
 
 
 def test_founder_assigns_contacts_in_bulk(founder_client, founder, seller, contact):

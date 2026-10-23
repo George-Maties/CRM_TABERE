@@ -52,11 +52,9 @@ class Opportunity(models.Model):
         related_name="opportunities",
         verbose_name="tabără",
     )
-    # Empty only while the opportunity is lost: losing it takes it off the seller's list.
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
-        null=True,
         related_name="opportunities",
         verbose_name="responsabil",
     )
@@ -110,7 +108,7 @@ class Opportunity(models.Model):
         """Set the status and record the change in the history; a reason (required when
         losing) goes in just before it, as an ordinary note.
         Winning needs the camp the contact joins; leaving "won" takes them out of it.
-        Losing takes the seller off the opportunity; whoever reopens it becomes responsible."""
+        The seller stays responsible whatever the status."""
         if new_status == Status.WON and camp is None:
             raise ValueError("A won opportunity needs a camp.")
         change = f"{self.get_status_display()} → {Status(new_status).label}"
@@ -118,11 +116,7 @@ class Opportunity(models.Model):
         self.camp = camp if new_status == Status.WON else None
         if self.camp:
             change += f" · {self.camp.name}"
-        if new_status == Status.LOST:
-            self.owner = None
-        elif self.owner is None:
-            self.owner = user
-        self.save(update_fields=["status", "camp", "owner", "updated_at"])
+        self.save(update_fields=["status", "camp", "updated_at"])
         if reason:
             self.notes.create(author=user, text=reason)
         self.notes.create(author=user, status_change=change, new_status=new_status)

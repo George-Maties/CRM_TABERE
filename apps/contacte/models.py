@@ -10,10 +10,6 @@ class ContactQuerySet(models.QuerySet):
         user, plus those of their own opportunities (so an opportunity never links to a 404)."""
         if user.has_perm("contacte.view_all_contacts"):
             return self
-        return self.mine(user)
-
-    def mine(self, user):
-        """The contacts assigned to the user or with an opportunity of theirs."""
         mine = self.model.objects.filter(Q(assignees=user) | Q(opportunities__owner=user))
         return self.filter(pk__in=mine.values("pk"))
 
@@ -34,10 +30,7 @@ class ContactQuerySet(models.QuerySet):
 class Contact(models.Model):
     class Kind(models.TextChoices):
         PARENT = "parinte", "Părinte"
-        SCHOOL = "scoala", "Școală"
         TEACHER = "profesor", "Profesor"
-        COMPANY = "firma", "Firmă"
-        OTHER = "altul", "Altul"
 
     name = models.CharField("nume", max_length=200)
     kind = models.CharField("tip", max_length=20, choices=Kind.choices, default=Kind.PARENT)

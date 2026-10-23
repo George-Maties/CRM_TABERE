@@ -29,11 +29,7 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
         self.fields["owner"].queryset = team_members()
         # Only roles that see every opportunity may hand one to someone else;
         # anyone else owns what they create, so it never disappears from their list.
-        # A lost opportunity has nobody; reopening it gives it an owner again.
-        if (
-            not user.has_perm("oportunitati.view_all_opportunities")
-            or self.instance.status == Status.LOST
-        ):
+        if not user.has_perm("oportunitati.view_all_opportunities"):
             del self.fields["owner"]
         if self.instance.pk:
             # Notes are added on the opportunity page, with the rest of the history.

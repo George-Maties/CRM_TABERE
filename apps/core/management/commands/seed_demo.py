@@ -16,20 +16,10 @@ DEMO_DOMAIN = "@example.com"
 CONTACTS = [
     ("Andreea Ionescu", Contact.Kind.PARENT, "0700 100 201", "andreea.ionescu"),
     ("Mihai Popa", Contact.Kind.PARENT, "0700 100 202", "mihai.popa"),
-    (
-        "Școala Gimnazială nr. 12 Brașov",
-        Contact.Kind.SCHOOL,
-        "0700 100 203",
-        "secretariat.scoala12",
-    ),
+    ("Prof. Adriana Munteanu", Contact.Kind.TEACHER, "0700 100 203", "adriana.munteanu"),
     ("Elena Dumitrescu", Contact.Kind.PARENT, "0700 100 204", "elena.dumitrescu"),
-    (
-        "Liceul Teoretic „Mihai Eminescu” Cluj",
-        Contact.Kind.SCHOOL,
-        "0700 100 205",
-        "liceul.eminescu",
-    ),
-    ("Softwave SRL", Contact.Kind.COMPANY, "0700 100 206", "hr.softwave"),
+    ("Prof. Sorin Lazăr", Contact.Kind.TEACHER, "0700 100 205", "sorin.lazar"),
+    ("Daniel Sârbu", Contact.Kind.PARENT, "0700 100 206", "daniel.sarbu"),
     ("Cristina Stan", Contact.Kind.PARENT, "0700 100 207", "cristina.stan"),
     ("Radu Georgescu", Contact.Kind.PARENT, "0700 100 208", "radu.georgescu"),
     ("Prof. Maria Vasilescu", Contact.Kind.TEACHER, "0700 100 209", "maria.vasilescu"),
@@ -81,7 +71,7 @@ OPPORTUNITIES = [
         [
             (
                 "founder",
-                "Am vorbit cu doamna dirigintă. Vor 3 zile în mai, buget de circa 900 lei de elev.",
+                "Vrea 3 zile în mai pentru toată clasa, buget de circa 900 lei de elev.",
             ),
         ],
     ),
@@ -103,7 +93,7 @@ OPPORTUNITIES = [
         [
             (
                 "founder",
-                "HR-ul vrea o propunere pentru 25 de copii, august. Decid în două săptămâni.",
+                "Vrea tabăra din august pentru 2 copii. Decide în două săptămâni.",
             ),
         ],
     ),
@@ -209,8 +199,7 @@ class Command(BaseCommand):
                 contact=contacts[contact_index],
                 status=status,
                 camp=camp,
-                # Losing an opportunity takes the seller off it.
-                owner=None if status == Status.LOST else people[owner],
+                owner=people[owner],
                 created_by=people[owner],
             )
             when = now - timedelta(days=days_ago)
@@ -237,7 +226,7 @@ class Command(BaseCommand):
             opportunities.append(opportunity)
             # A contact belongs to the seller of its first opportunity; the rest stay unassigned.
             contact = opportunity.contact
-            if opportunity.owner and not contact.assignees.exists():
+            if not contact.assignees.exists():
                 contact.assignees.add(opportunity.owner)
 
         for camp_key, title, assignee, creator, due_in, done in TASKS:

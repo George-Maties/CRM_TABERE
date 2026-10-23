@@ -42,19 +42,57 @@ def test_status_tabs_count_and_filter(founder_client, founder, make_opportunity)
     response = founder_client.get(reverse("oportunitati:list"), {"status": "potential"})
 
     tabs = response.context["status_tabs"]
-    assert [tab["label"] for tab in tabs] == ["Potențial", "Câștigat", "Pierdut"]
+    assert [tab["label"] for tab in tabs] == ["Toate", "Potențial", "Câștigat", "Pierdut"]
     counts = {tab["value"]: tab["count"] for tab in tabs}
-    assert counts["potential"] == 2 and counts["castigata"] == 1
+    assert counts == {None: 3, "potential": 2, "castigata": 1, "pierduta": 0}
+    assert [tab["label"] for tab in tabs if tab["active"]] == ["Potențial"]
     assert len(response.context["opportunity_list"]) == 2
 
 
-def test_founder_filters_own_opportunities(founder_client, founder, seller, make_opportunity):
-    mine = make_opportunity(founder)
-    make_opportunity(seller)
+def test_search_runs_as_you_type(founder_client, founder, contact, make_opportunity):
+    make_opportunity(founder)
 
-    response = founder_client.get(reverse("oportunitati:list"), {"ale_mele": "1"})
+    response = founder_client.get(reverse("oportunitati:list"), {"q": "ana"})
+
+    page = response.content.decode()
+    assert len(response.context["opportunity_list"]) == 1
+    assert 'data-auto-search="rezultate"' in page and 'id="rezultate"' in page
+    assert ">Caută</button>" not in page and "Doar ale mele" not in page
+
+
+def test_founder_filters_by_seller(founder_client, founder, seller, other_seller, make_opportunity):
+    sellers = make_opportunity(seller)
+    make_opportunity(seller, status=Status.WON)
+    make_opportunity(other_seller)
+    make_opportunity(founder)
+
+    response = founder_client.get(
+        reverse("oportunitati:list"), {"responsabil": seller.pk, "status": "potential"}
+    )
+
+    assert list(response.context["opportunity_list"]) == [sellers]
+    counts = {tab["value"]: tab["count"] for tab in response.context["status_tabs"]}
+    assert counts == {None: 2, "potential": 1, "castigata": 1, "pierduta": 0}
+    # Seller tabs count within the chosen status: one potential opportunity each.
+    owner_counts = {tab["value"]: tab["count"] for tab in response.context["owner_tabs"]}
+    assert owner_counts == {str(founder.pk): 1, str(seller.pk): 1, str(other_seller.pk): 1}
+    page = response.content.decode()
+    assert 'class="status-tabs-divider"' in page
+    # The selected seller's tab clears the filter and keeps the status.
+    assert 'href="?status=potential" class="status-tab active"' in page
+
+
+def test_seller_cannot_filter_by_another_seller(
+    seller_client, seller, other_seller, make_opportunity
+):
+    mine = make_opportunity(seller)
+    make_opportunity(other_seller)
+
+    response = seller_client.get(reverse("oportunitati:list"), {"responsabil": other_seller.pk})
 
     assert list(response.context["opportunity_list"]) == [mine]
+    assert response.context["owner_tabs"] == []
+    assert "status-tabs-divider" not in response.content.decode()
 
 
 def test_new_opportunity_is_potential(seller_client, seller, contact):
@@ -150,23 +188,22 @@ def test_lost_needs_a_reason(seller_client, seller, make_opportunity):
     assert opportunity.status == Status.POTENTIAL and opportunity.owner == seller
 
 
-def test_lost_saves_the_reason_as_a_note_and_takes_the_seller_off(
+def test_lost_saves_the_reason_as_a_note_and_keeps_the_seller(
     seller_client, seller, make_opportunity
 ):
     opportunity = make_opportunity(seller)
 
     response = _change_status(seller_client, opportunity, status="pierduta", reason="Prea scump.")
 
-    # The seller can no longer open it, so they go back to their list.
-    assert response.url == reverse("oportunitati:list")
+    assert response.url == opportunity.get_absolute_url()
     opportunity.refresh_from_db()
-    assert opportunity.status == Status.LOST and opportunity.owner is None
+    assert opportunity.status == Status.LOST and opportunity.owner == seller
     # Newest first: the status change, then the reason as an ordinary note.
     change, note = opportunity.notes.all()
     assert change.status_change == "Potențial → Pierdut" and change.text == ""
     assert change.new_status == Status.LOST
     assert note.text == "Prea scump." and note.status_change == "" and note.author == seller
-    assert seller_client.get(opportunity.get_absolute_url()).status_code == 404
+    assert seller_client.get(opportunity.get_absolute_url()).status_code == 200
 
 
 def test_reason_typed_for_another_status_is_not_kept(seller_client, seller, make_opportunity):
@@ -181,23 +218,7 @@ def test_reason_typed_for_another_status_is_not_kept(seller_client, seller, make
     assert opportunity.notes.count() == 1
 
 
-def test_founder_sees_lost_opportunity_without_owner(founder_client, seller, make_opportunity):
-    opportunity = make_opportunity(seller)
-    opportunity.change_status(Status.LOST, seller, "A ales altă tabără.")
-
-    response = founder_client.get(opportunity.get_absolute_url())
-
-    assert response.status_code == 200
-    assert "Nimeni (pierdut)" in response.content.decode()
-    assert (
-        "owner"
-        not in founder_client.get(reverse("oportunitati:update", args=[opportunity.pk]))
-        .context["form"]
-        .fields
-    )
-
-
-def test_reopening_lost_opportunity_makes_you_responsible(
+def test_reopening_lost_opportunity_keeps_the_seller(
     founder_client, founder, seller, make_opportunity
 ):
     opportunity = make_opportunity(seller)
@@ -206,7 +227,7 @@ def test_reopening_lost_opportunity_makes_you_responsible(
     _change_status(founder_client, opportunity, status="potential")
 
     opportunity.refresh_from_db()
-    assert opportunity.status == Status.POTENTIAL and opportunity.owner == founder
+    assert opportunity.status == Status.POTENTIAL and opportunity.owner == seller
 
 
 def test_won_needs_an_existing_camp(seller_client, seller, make_opportunity):

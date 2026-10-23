@@ -1,13 +1,14 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Q
+from django.db.models import Count, Q
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
 from apps.accounts.roles import sellers_and_founders
+from apps.core.templatetags.ui import display_name
 from apps.oportunitati.models import Opportunity
 
 from .forms import AssignForm, ContactForm
@@ -15,6 +16,16 @@ from .models import Contact
 
 # Value of the "atribuit" filter that shows the contacts nobody works yet
 UNASSIGNED = "nimeni"
+
+
+def count_by(contacts, field):
+    """How many of these contacts there are for each value of `field`."""
+    return dict(
+        contacts.order_by()
+        .prefetch_related(None)
+        .values_list(field)
+        .annotate(total=Count("id", distinct=True))
+    )
 
 
 def assignable_people():
@@ -36,39 +47,71 @@ class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
 
     def get_queryset(self):
         contacts = super().get_queryset()
+        user = self.request.user
         self.query = self.request.GET.get("q", "").strip()
         self.kind = self.request.GET.get("tip", "")
-        self.assignee = self.request.GET.get("atribuit", "")
-        self.mine = self.request.GET.get("ale_mele") == "1"
+        self.can_see_all = user.has_perm("contacte.view_all_contacts")
+        # Filtering by person only for roles that see everyone's contacts
+        self.assignee = self.request.GET.get("atribuit", "") if self.can_see_all else ""
         if self.query:
             contacts = contacts.filter(
                 Q(name__icontains=self.query)
                 | Q(phone__icontains=self.query)
                 | Q(email__icontains=self.query)
             )
-        if self.kind in Contact.Kind.values:
-            contacts = contacts.filter(kind=self.kind)
-        if self.mine:
-            contacts = contacts.mine(self.request.user)
+        # Each row of tabs counts with the other row's filter but not its own,
+        # so every tab shows how many it would list.
+        by_kind = contacts.filter(kind=self.kind) if self.kind in Contact.Kind.values else contacts
+        by_assignee = contacts
         if self.assignee == UNASSIGNED:
-            contacts = contacts.filter(assignees__isnull=True)
+            by_assignee = contacts.filter(assignees__isnull=True)
         elif self.assignee.isdigit():
-            contacts = contacts.filter(assignees=self.assignee)
-        return contacts
+            by_assignee = contacts.filter(assignees=self.assignee)
+        self.kind_counts = count_by(by_assignee, "kind")
+        # Unassigned contacts are counted under None.
+        self.assignee_counts = count_by(by_kind, "assignees") if self.can_see_all else {}
+        if self.kind in Contact.Kind.values:
+            return by_assignee.filter(kind=self.kind)
+        return by_assignee
 
     def get_context_data(self, **kwargs):
         user = self.request.user
+        total = sum(self.kind_counts.values())
+        kind_tabs = [{"value": None, "label": "Toate", "count": total, "active": not self.kind}] + [
+            {
+                "value": value,
+                "label": label,
+                "count": self.kind_counts.get(value, 0),
+                "active": value == self.kind,
+            }
+            for value, label in Contact.Kind.choices
+        ]
+        assignee_tabs = []
+        if self.can_see_all:
+            assignee_tabs = [
+                {
+                    "value": UNASSIGNED,
+                    "label": "Neatribuite",
+                    "count": self.assignee_counts.get(None, 0),
+                    "active": self.assignee == UNASSIGNED,
+                }
+            ] + [
+                {
+                    "value": str(person.pk),
+                    "label": display_name(person),
+                    "count": self.assignee_counts.get(person.pk, 0),
+                    "active": str(person.pk) == self.assignee,
+                }
+                for person in sellers_and_founders()
+            ]
         context = {
             "query": self.query,
             "kind": self.kind,
-            "kinds": Contact.Kind.choices,
             "assignee": self.assignee,
-            "mine": self.mine,
-            "unassigned": UNASSIGNED,
-            "can_see_all": user.has_perm("contacte.view_all_contacts"),
+            "kind_tabs": kind_tabs,
+            "assignee_tabs": assignee_tabs,
+            "can_see_all": self.can_see_all,
         }
-        if context["can_see_all"]:
-            context["team"] = sellers_and_founders()
         if user.has_perm("contacte.assign_contact"):
             context["assignable"] = assignable_people()
         context.update(kwargs)

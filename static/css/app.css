@@ -749,6 +749,12 @@ body {
   width: auto;
 }
 
+/* Results of a search-as-you-type form, dimmed while the new ones load */
+.search-results[aria-busy="true"] {
+  opacity: 0.6;
+  transition: opacity 150ms var(--app-ease);
+}
+
 /* ---- Bulk actions bar: on top of a list with checkboxes ---- */
 .bulk-bar {
   display: flex;
@@ -893,6 +899,15 @@ body {
   color: var(--app-accent);
   background-color: var(--app-accent-subtle);
   border-color: transparent;
+}
+
+/* Between the status tabs and the seller tabs */
+.status-tabs-divider {
+  flex-shrink: 0;
+  align-self: stretch;
+  width: 1px;
+  margin: 0.25rem 0.375rem;
+  background-color: var(--app-border);
 }
 
 .status-tab-count {

@@ -1,0 +1,10 @@
+{% comment %}
+  Usage, inside <nav class="status-tabs">:
+    {% query_with status=tab.value as url %}
+    {% include "components/filter_tab.html" with url=url label=tab.label count=tab.count active=True %}
+  A filter button with how many items it lists. Optional: title (tooltip).
+  Separate groups of buttons with <span class="status-tabs-divider" aria-hidden="true"></span>.
+{% endcomment %}
+<a href="{{ url }}" class="status-tab{% if active %} active{% endif %}"{% if active %} aria-current="page"{% endif %}{% if title %} title="{{ title }}"{% endif %}>
+  {{ label }} <span class="status-tab-count">{{ count }}</span>
+</a>
