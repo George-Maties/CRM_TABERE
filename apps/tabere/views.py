@@ -50,6 +50,8 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
         for opportunity in participants:
             # Only who works the opportunity opens it and adds or removes its children.
             opportunity.can_edit = opportunity.pk in visible_ids
+        child_count = sum(len(opportunity.children.all()) for opportunity in participants)
+        adult_count = sum(opportunity.contact_goes for opportunity in participants)
         visible_contact_ids = set(
             Contact.objects.visible_to(self.request.user)
             .filter(opportunities__camp=self.object)
@@ -59,9 +61,10 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
             "participants": participants,
             "visible_ids": visible_ids,
             "visible_contact_ids": visible_contact_ids,
-            "child_count": Child.objects.filter(
-                opportunity__camp=self.object, opportunity__status=Status.WON
-            ).count(),
+            # Seats taken: the children, plus the parents and teachers who come along
+            "child_count": child_count,
+            "adult_count": adult_count,
+            "people_count": child_count + adult_count,
             # The participant whose "+" form came back with errors, opened again
             "child_form": None,
             "child_form_for": None,
@@ -184,4 +187,20 @@ class ChildDeleteView(PermissionRequiredMixin, View):
         opportunity = participant_for(request.user, child.opportunity_id)
         child.delete()
         messages.success(request, f"{child.name} a fost scos din tabără.")
+        return redirect(f"{opportunity.camp.get_absolute_url()}#participant-{opportunity.pk}")
+
+
+class ParticipantGoesView(PermissionRequiredMixin, View):
+    """The "Merge în tabără" tick of a participant: the contact comes to the camp too."""
+
+    permission_required = "oportunitati.change_opportunity"
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        opportunity = participant_for(request.user, pk)
+        opportunity.contact_goes = request.POST.get("contact_goes") == "1"
+        opportunity.save(update_fields=["contact_goes", "updated_at"])
+        name = opportunity.contact.name
+        verb = "merge" if opportunity.contact_goes else "nu mai merge"
+        messages.success(request, f"{name} {verb} în „{opportunity.camp.name}”.")
         return redirect(f"{opportunity.camp.get_absolute_url()}#participant-{opportunity.pk}")

@@ -1097,6 +1097,17 @@ body {
   white-space: nowrap;
 }
 
+.participant-children {
+  margin-right: 0.5rem;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+.participant-goes {
+  margin-top: 0.375rem;
+  font-size: 0.875rem;
+}
+
 .participant-add {
   display: inline-flex;
   align-items: center;

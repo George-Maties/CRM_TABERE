@@ -57,6 +57,8 @@ class Opportunity(models.Model):
         related_name="opportunities",
         verbose_name="tabără",
     )
+    # The parent or teacher comes to the camp too (with the children), taking a seat.
+    contact_goes = models.BooleanField("merge în tabără", default=False)
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,

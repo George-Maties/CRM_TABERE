@@ -232,3 +232,45 @@ def test_camp_cannot_use_an_accommodation_not_in_the_list(founder_client):
     )
 
     assert response.context["form"].errors["accommodation"]
+
+
+def test_contact_goes_to_camp_and_takes_a_seat(seller_client, seller, make_opportunity):
+    place = Accommodation.objects.create(name="Pensiunea Bradul", city="Bran", capacity=40)
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04", accommodation=place)
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+    Child.objects.create(opportunity=opportunity, name="Matei", age=9)
+    Child.objects.create(opportunity=opportunity, name="Ana", age=7)
+
+    response = seller_client.post(
+        reverse("tabere:participant-goes", args=[opportunity.pk]), {"contact_goes": "1"}
+    )
+
+    assert response.url == f"{camp.get_absolute_url()}#participant-{opportunity.pk}"
+    opportunity.refresh_from_db()
+    assert opportunity.contact_goes
+    page = seller_client.get(camp.get_absolute_url())
+    assert (page.context["child_count"], page.context["adult_count"]) == (2, 1)
+    html = page.content.decode()
+    assert "2 copii și 1 adult · 3 din 40 de locuri" in html
+    assert '<span class="participant-children">2 copii</span>' in html
+    assert f'id="merge-{opportunity.pk}" checked' in html
+
+    seller_client.post(reverse("tabere:participant-goes", args=[opportunity.pk]), {})
+
+    opportunity.refresh_from_db()
+    assert not opportunity.contact_goes
+
+
+def test_seller_cannot_tick_someone_elses_participant(
+    seller_client, other_seller, make_opportunity
+):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    theirs = make_opportunity(other_seller, status=Status.WON, camp=camp)
+
+    response = seller_client.post(
+        reverse("tabere:participant-goes", args=[theirs.pk]), {"contact_goes": "1"}
+    )
+
+    assert response.status_code == 404
+    theirs.refresh_from_db()
+    assert not theirs.contact_goes

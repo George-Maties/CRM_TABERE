@@ -40,7 +40,7 @@
     <div class="col-xl-8">
       <section class="card">
         <div class="card-body pb-0">
-          <h2 class="card-title-sm">Participanți <span class="count-pill">{{ participants|length }}</span>{% if child_count or camp.accommodation.capacity %} <span class="text-body-secondary small fw-normal">{{ child_count|plural:"copil,copii" }}{% if camp.accommodation.capacity %} din {{ camp.accommodation.capacity|plural:"loc,locuri" }}{% endif %}</span>{% endif %}</h2>
+          <h2 class="card-title-sm">Participanți <span class="count-pill">{{ participants|length }}</span>{% if people_count or camp.accommodation.capacity %} <span class="text-body-secondary small fw-normal">{{ child_count|plural:"copil,copii" }}{% if adult_count %} și {{ adult_count|plural:"adult,adulți" }}{% endif %}{% if camp.accommodation.capacity %} · {{ people_count }} din {{ camp.accommodation.capacity|plural:"loc,locuri" }}{% endif %}</span>{% endif %}</h2>
         </div>
         {% if participants %}
           <div class="table-responsive">
@@ -57,13 +57,32 @@
               <tbody>
                 {% for opportunity in participants %}
                   <tr id="participant-{{ opportunity.pk }}">
-                    <td>{% if opportunity.contact_id in visible_contact_ids %}<a class="fw-semibold row-link" href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a>{% else %}<span class="fw-semibold">{{ opportunity.contact.name }}</span>{% endif %}</td>
+                    <td>
+                      {% if opportunity.contact_id in visible_contact_ids %}<a class="fw-semibold row-link" href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a>{% else %}<span class="fw-semibold">{{ opportunity.contact.name }}</span>{% endif %}
+                      <div class="small text-body-secondary">{{ opportunity.contact.get_kind_display }}</div>
+                      {# The parent or teacher comes too, and takes a seat #}
+                      {% if opportunity.can_edit and perms.oportunitati.change_opportunity %}
+                        <form class="participant-goes" method="post" action="{% url 'tabere:participant-goes' opportunity.pk %}">
+                          {% csrf_token %}
+                          <div class="form-check mb-0">
+                            <input class="form-check-input" type="checkbox" name="contact_goes" value="1" id="merge-{{ opportunity.pk }}"{% if opportunity.contact_goes %} checked{% endif %} data-auto-submit>
+                            <label class="form-check-label" for="merge-{{ opportunity.pk }}">Merge în tabără</label>
+                          </div>
+                          <noscript><button type="submit" class="btn btn-link btn-sm p-0">Salvează</button></noscript>
+                        </form>
+                      {% elif opportunity.contact_goes %}
+                        <div class="small"><i class="bi bi-check2" aria-hidden="true"></i> Merge în tabără</div>
+                      {% endif %}
+                    </td>
                     <td class="text-nowrap">{% if opportunity.contact.phone and opportunity.contact_id in visible_contact_ids %}<a href="tel:{{ opportunity.contact.phone }}">{{ opportunity.contact.phone }}</a>{% else %}—{% endif %}</td>
                     <td class="d-none d-md-table-cell">
                       {% if opportunity.can_edit %}<a href="{{ opportunity.get_absolute_url }}">{{ opportunity.title }}</a>{% else %}<span class="text-body-secondary">—</span>{% endif %}
                     </td>
                     <td class="d-none d-sm-table-cell">{{ opportunity.owner|display_name }}</td>
                     <td class="col-actions">
+                      {% with children=opportunity.children.all %}
+                        <span class="participant-children">{{ children|length|plural:"copil,copii" }}</span>
+                      {% endwith %}
                       {% if opportunity.can_edit and perms.tabere.add_child %}
                         <button class="btn btn-sm btn-outline-secondary participant-add" type="button"
                                 data-bs-toggle="collapse" data-bs-target="#copil-{{ opportunity.pk }}"
