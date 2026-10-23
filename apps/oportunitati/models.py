@@ -1,5 +1,6 @@
 from django.conf import settings
 from django.db import models
+from django.db.models import Count, Max, OuterRef, Subquery
 from django.urls import reverse
 
 from apps.contacte.models import Contact
@@ -25,12 +26,25 @@ class OpportunityQuerySet(models.QuerySet):
             return self
         return self.filter(owner=user)
 
+    def with_titles(self):
+        """Add what `title` needs (how many opportunities each contact has) to the same query,
+        so a list doesn't ask the database once per row."""
+        totals = (
+            self.model.objects.filter(contact=OuterRef("contact"))
+            .order_by()
+            .values("contact")
+            .annotate(total=Count("pk"))
+            .values("total")
+        )
+        return self.annotate(contact_total=Subquery(totals))
+
 
 class Opportunity(models.Model):
     contact = models.ForeignKey(
         Contact, on_delete=models.CASCADE, related_name="opportunities", verbose_name="contact"
     )
-    title = models.CharField("titlu", max_length=200)
+    # 1, 2, 3… per contact: "Ana Pop #2". Kept when other opportunities are deleted.
+    number = models.PositiveIntegerField("nr.", editable=False)
     status = models.CharField("status", max_length=20, choices=Status.choices, default=Status.NEW)
     # Set when the opportunity is won: the camp the contact goes to.
     camp = models.ForeignKey(
@@ -65,12 +79,33 @@ class Opportunity(models.Model):
         verbose_name = "oportunitate"
         verbose_name_plural = "oportunități"
         permissions = [("view_all_opportunities", "Poate vedea toate oportunitățile")]
+        constraints = [
+            models.UniqueConstraint(
+                fields=["contact", "number"], name="unique_opportunity_number_per_contact"
+            )
+        ]
 
     def __str__(self):
         return self.title
 
+    def save(self, *args, **kwargs):
+        if not self.number:
+            last = Opportunity.objects.filter(contact_id=self.contact_id).aggregate(Max("number"))
+            self.number = (last["number__max"] or 0) + 1
+        super().save(*args, **kwargs)
+
     def get_absolute_url(self):
         return reverse("oportunitati:detail", args=[self.pk])
+
+    @property
+    def title(self):
+        """The contact's name; with "#1", "#2"… when the contact has more than one opportunity."""
+        total = getattr(self, "contact_total", None)
+        if total is None:
+            total = Opportunity.objects.filter(contact_id=self.contact_id).count()
+        if total > 1:
+            return f"{self.contact.name} #{self.number}"
+        return self.contact.name
 
     def change_status(self, new_status, user, comment, camp=None):
         """Set the status and record it, with the required comment, in the notes.

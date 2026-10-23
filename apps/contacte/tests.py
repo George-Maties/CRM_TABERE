@@ -112,10 +112,8 @@ def test_founder_sees_all_contacts_and_filters_unassigned(founder_client, seller
 
 def test_founder_assigns_contacts_in_bulk(founder_client, founder, seller, contact):
     other = Contact.objects.create(name="Mihai Popa")
-    open_one = Opportunity.objects.create(contact=contact, title="Vară", owner=founder)
-    won = Opportunity.objects.create(
-        contact=contact, title="Iarnă", owner=founder, status=Status.WON
-    )
+    open_one = Opportunity.objects.create(contact=contact, owner=founder)
+    won = Opportunity.objects.create(contact=contact, owner=founder, status=Status.WON)
 
     response = founder_client.post(
         reverse("contacte:assign"),
@@ -137,7 +135,7 @@ def test_founder_assigns_contacts_in_bulk(founder_client, founder, seller, conta
 
 
 def test_assigning_can_leave_opportunities_where_they_are(founder_client, founder, seller, contact):
-    opportunity = Opportunity.objects.create(contact=contact, title="Vară", owner=founder)
+    opportunity = Opportunity.objects.create(contact=contact, owner=founder)
 
     founder_client.post(
         reverse("contacte:assign"), {"contacts": [contact.pk], "assigned_to": seller.pk}
@@ -197,7 +195,7 @@ def test_seller_cannot_assign_contacts(seller_client, seller, other_seller, cont
 def test_changing_assignee_on_edit_moves_open_opportunities(
     founder_client, founder, seller, contact
 ):
-    opportunity = Opportunity.objects.create(contact=contact, title="Vară", owner=founder)
+    opportunity = Opportunity.objects.create(contact=contact, owner=founder)
 
     founder_client.post(
         reverse("contacte:update", args=[contact.pk]),

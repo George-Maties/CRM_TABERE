@@ -35,8 +35,10 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
     template_name = "tabere/detail.html"
 
     def get_context_data(self, **kwargs):
-        participants = self.object.opportunities.filter(status=Status.WON).select_related(
-            "contact", "owner"
+        participants = (
+            self.object.opportunities.filter(status=Status.WON)
+            .select_related("contact", "owner")
+            .with_titles()
         )
         visible_ids = set(
             Opportunity.objects.visible_to(self.request.user)

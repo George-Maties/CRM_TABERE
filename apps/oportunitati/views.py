@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Count, Q
+from django.db.models import Count
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -17,7 +17,11 @@ class VisibleOpportunityMixin:
     """Limit every view to the opportunities the user may see; others answer 404."""
 
     def get_queryset(self):
-        return Opportunity.objects.visible_to(self.request.user).select_related("contact", "owner")
+        return (
+            Opportunity.objects.visible_to(self.request.user)
+            .select_related("contact", "owner")
+            .with_titles()
+        )
 
 
 class OpportunityListView(PermissionRequiredMixin, VisibleOpportunityMixin, ListView):
@@ -31,9 +35,7 @@ class OpportunityListView(PermissionRequiredMixin, VisibleOpportunityMixin, List
         self.mine = self.request.GET.get("ale_mele") == "1"
         self.status = self.request.GET.get("status", "")
         if self.query:
-            opportunities = opportunities.filter(
-                Q(title__icontains=self.query) | Q(contact__name__icontains=self.query)
-            )
+            opportunities = opportunities.filter(contact__name__icontains=self.query)
         if self.mine:
             opportunities = opportunities.filter(owner=self.request.user)
         # Counts per status ignore the status filter itself, so every tab shows its number.

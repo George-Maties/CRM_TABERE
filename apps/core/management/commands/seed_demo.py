@@ -46,11 +46,10 @@ CAMPS = {
 # Won opportunities (by index in OPPORTUNITIES) and the camp they joined
 WON_CAMPS = {3: "vara2026", 8: "vara2026"}
 
-# contact index, title, status, owner ("seller"/"founder"), days since last activity, notes
+# contact index, status, owner ("seller"/"founder"), days since last activity, notes
 OPPORTUNITIES = [
     (
         0,
-        "Tabăra de vară 2027, 2 copii (9 și 11 ani)",
         Status.IN_PROGRESS,
         "seller",
         1,
@@ -67,7 +66,6 @@ OPPORTUNITIES = [
     ),
     (
         1,
-        "Tabără de iarnă 2027",
         Status.CALLED,
         "seller",
         2,
@@ -77,7 +75,6 @@ OPPORTUNITIES = [
     ),
     (
         2,
-        "Excursie clasa a V-a, 28 de elevi",
         Status.ANSWERED,
         "founder",
         3,
@@ -90,7 +87,6 @@ OPPORTUNITIES = [
     ),
     (
         3,
-        "Tabăra de vară 2026",
         Status.WON,
         "seller",
         40,
@@ -98,10 +94,9 @@ OPPORTUNITIES = [
             ("seller", "A confirmat pentru seria 2. Avansul a fost plătit."),
         ],
     ),
-    (4, "Tabără de vară cu limba engleză, 40 de elevi", Status.NEW, "founder", 0, []),
+    (4, Status.NEW, "founder", 0, []),
     (
         5,
-        "Tabără pentru copiii angajaților",
         Status.IN_PROGRESS,
         "founder",
         1,
@@ -114,7 +109,6 @@ OPPORTUNITIES = [
     ),
     (
         6,
-        "Tabăra de vară 2027",
         Status.LOST,
         "seller",
         10,
@@ -124,7 +118,6 @@ OPPORTUNITIES = [
     ),
     (
         7,
-        "Tabără de schi, 1 copil",
         Status.ANSWERED,
         "seller",
         4,
@@ -137,7 +130,6 @@ OPPORTUNITIES = [
     ),
     (
         9,
-        "Tabăra de vară 2026",
         Status.WON,
         "seller",
         60,
@@ -145,7 +137,7 @@ OPPORTUNITIES = [
             ("seller", "Confirmat. Copilul a mai fost la noi și anul trecut."),
         ],
     ),
-    (9, "Tabăra de vară 2027", Status.NEW, "seller", 0, []),
+    (9, Status.NEW, "seller", 0, []),
 ]
 
 # camp, task, assignee, created by, due in days (None = no date), done
@@ -211,13 +203,10 @@ class Command(BaseCommand):
         ]
 
         opportunities = []
-        for index, (contact_index, title, status, owner, days_ago, notes) in enumerate(
-            OPPORTUNITIES
-        ):
+        for index, (contact_index, status, owner, days_ago, notes) in enumerate(OPPORTUNITIES):
             camp = camps[WON_CAMPS[index]] if index in WON_CAMPS else None
             opportunity = Opportunity.objects.create(
                 contact=contacts[contact_index],
-                title=title,
                 status=status,
                 camp=camp,
                 owner=people[owner],

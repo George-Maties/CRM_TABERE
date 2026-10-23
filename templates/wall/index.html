@@ -39,7 +39,7 @@
                       {% if note.status_change %}a schimbat statusul{% else %}a scris o notă{% endif %}
                       <time datetime="{{ note.created_at|date:'c' }}" title="{{ note.created_at|date:'j F Y, H:i'|lower }}">{{ note.created_at|naturaltime }}</time>
                     </div>
-                    <a class="d-block text-truncate" href="{{ note.opportunity.get_absolute_url }}#istoric">{{ note.opportunity.contact.name }} · {{ note.opportunity.title }}</a>
+                    <a class="d-block text-truncate" href="{{ note.opportunity.get_absolute_url }}#istoric">{{ note.opportunity.title }}</a>
                     {% if note.status_change %}<div class="small status-change text-truncate">{{ note.status_change }}</div>{% endif %}
                     {% if note.text %}<div class="text-body-secondary small text-truncate">{{ note.text }}</div>{% endif %}
                   </div>

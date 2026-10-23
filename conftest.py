@@ -53,8 +53,6 @@ def contact(db):
 @pytest.fixture
 def make_opportunity(contact):
     def make(owner, **fields):
-        return Opportunity.objects.create(
-            contact=contact, title="Tabăra de vară", owner=owner, **fields
-        )
+        return Opportunity.objects.create(contact=contact, owner=owner, **fields)
 
     return make

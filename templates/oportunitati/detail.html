@@ -6,7 +6,7 @@
 {% block page_subtitle %}
   <p class="page-subtitle">
     {% status_badge opportunity %}
-    <a href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a>
+    <a href="{{ opportunity.contact.get_absolute_url }}">Vezi contactul</a>
     {% if opportunity.contact.phone %}· <a href="tel:{{ opportunity.contact.phone }}">{{ opportunity.contact.phone }}</a>{% endif %}
   </p>
 {% endblock %}

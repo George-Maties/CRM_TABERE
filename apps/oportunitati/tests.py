@@ -63,7 +63,7 @@ def test_create_form_offers_only_open_statuses(seller_client, contact):
 def test_create_with_status_needs_note(seller_client, contact):
     response = seller_client.post(
         reverse("oportunitati:create"),
-        {"contact": contact.pk, "title": "Tabăra de iarnă", "status": "sunat", "note": ""},
+        {"contact": contact.pk, "status": "sunat", "note": ""},
     )
 
     assert response.context["form"].errors["note"]
@@ -77,13 +77,12 @@ def test_seller_creates_opportunity_from_contact(seller_client, seller, contact)
         reverse("oportunitati:create"),
         {
             "contact": contact.pk,
-            "title": "Tabăra de iarnă",
             "status": "sunat",
             "note": "A răspuns.",
         },
     )
 
-    opportunity = Opportunity.objects.get(title="Tabăra de iarnă")
+    opportunity = Opportunity.objects.get()
     assert response.url == opportunity.get_absolute_url()
     assert opportunity.owner == seller
     assert opportunity.notes.get().text == "A răspuns."
@@ -92,10 +91,10 @@ def test_seller_creates_opportunity_from_contact(seller_client, seller, contact)
 def test_founder_assigns_opportunity_to_seller(founder_client, seller, contact):
     founder_client.post(
         reverse("oportunitati:create"),
-        {"contact": contact.pk, "title": "Grup școală", "status": "nou", "owner": seller.pk},
+        {"contact": contact.pk, "status": "nou", "owner": seller.pk},
     )
 
-    assert Opportunity.objects.get(title="Grup școală").owner == seller
+    assert Opportunity.objects.get().owner == seller
     contact.refresh_from_db()
     assert contact.assigned_to == seller
 
@@ -107,7 +106,7 @@ def test_seller_cannot_create_opportunity_for_contact_not_assigned_to_them(
     contact.save()
 
     response = seller_client.post(
-        reverse("oportunitati:create"), {"contact": contact.pk, "title": "X", "status": "nou"}
+        reverse("oportunitati:create"), {"contact": contact.pk, "status": "nou"}
     )
 
     assert response.context["form"].errors["contact"]
@@ -229,3 +228,48 @@ def test_seller_cannot_delete_opportunity(seller_client, seller, make_opportunit
 def test_founder_has_no_user_management(founder):
     assert not founder.is_staff
     assert not founder.has_perm("auth.add_user")
+
+
+def test_title_is_the_contact_name_numbered_when_there_are_several(
+    seller_client, seller, contact, make_opportunity
+):
+    first = make_opportunity(seller)
+    assert first.title == "Ana Pop"
+
+    second = make_opportunity(seller)
+
+    assert (first.number, second.number) == (1, 2)
+    assert Opportunity.objects.get(pk=first.pk).title == "Ana Pop #1"
+    titles = [
+        o.title for o in seller_client.get(reverse("oportunitati:list")).context["opportunity_list"]
+    ]
+    assert sorted(titles) == ["Ana Pop #1", "Ana Pop #2"]
+
+
+def test_numbers_are_kept_after_a_delete(founder, contact, make_opportunity):
+    first = make_opportunity(founder)
+    make_opportunity(founder)
+    first.delete()
+
+    third = make_opportunity(founder)
+
+    assert third.number == 3
+    assert third.title == "Ana Pop #3"
+
+
+def test_moving_to_another_contact_takes_its_next_number(
+    founder_client, founder, contact, make_opportunity
+):
+    from apps.contacte.models import Contact
+
+    other = Contact.objects.create(name="Mihai Popa")
+    Opportunity.objects.create(contact=other, owner=founder)
+    opportunity = make_opportunity(founder)
+
+    founder_client.post(
+        reverse("oportunitati:update", args=[opportunity.pk]),
+        {"contact": other.pk, "owner": founder.pk},
+    )
+
+    opportunity.refresh_from_db()
+    assert (opportunity.contact, opportunity.number) == (other, 2)

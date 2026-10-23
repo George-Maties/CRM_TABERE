@@ -74,7 +74,8 @@ class ContactDetailView(PermissionRequiredMixin, VisibleContactMixin, DetailView
         opportunities = (
             Opportunity.objects.visible_to(self.request.user)
             .filter(contact=self.object)
-            .select_related("owner")
+            .select_related("contact", "owner")
+            .with_titles()
         )
         context = {"opportunities": opportunities}
         if self.request.user.has_perm("contacte.assign_contact"):

@@ -7,7 +7,7 @@
   <form class="card form-card" method="post">
     <div class="card-body">
       {% csrf_token %}
-      <p>Oportunitatea <strong>{{ object.title }}</strong> ({{ object.contact.name }}) va fi ștearsă definitiv, cu toate notele și sarcinile ei.</p>
+      <p>Oportunitatea <strong>{{ object.title }}</strong> va fi ștearsă definitiv, cu tot istoricul ei.</p>
       <div class="form-actions">
         <button type="submit" class="btn btn-danger">Da, șterge oportunitatea</button>
         <a class="btn btn-link" href="{{ object.get_absolute_url }}">Renunță</a>

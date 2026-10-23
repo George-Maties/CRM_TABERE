@@ -14,14 +14,16 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
         label="Ce ați discutat",
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
-        help_text="Obligatoriu dacă statusul nu e „Nou”. Apare ca primă notă în istoric.",
+        help_text=(
+            "De exemplu: tabăra de vară, 2 copii (9 și 11 ani). Obligatoriu dacă statusul nu e"
+            " „Nou”. Apare ca primă notă în istoric."
+        ),
     )
 
     class Meta:
         model = Opportunity
-        fields = ["contact", "title", "status", "owner"]
+        fields = ["contact", "status", "owner"]
         field_classes = {"owner": UserChoiceField}
-        help_texts = {"title": "De exemplu: Tabăra de vară 2027, 2 copii"}
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
@@ -38,6 +40,12 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
         else:
             # Winning or losing needs a camp or a reason: that happens on the opportunity page.
             self.fields["status"].choices = [(s.value, s.label) for s in OPEN_STATUSES]
+
+    def save(self, commit=True):
+        if "contact" in self.changed_data and self.instance.pk:
+            # Moved to another contact: it takes the next number there.
+            self.instance.number = None
+        return super().save(commit)
 
     def clean(self):
         cleaned = super().clean()

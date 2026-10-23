@@ -8,7 +8,6 @@
     <div class="card-body">
       {% csrf_token %}
       {% include "components/form_field.html" with field=form.contact %}
-      {% include "components/form_field.html" with field=form.title %}
       <div class="row">
         {% if form.status %}<div class="col-sm-6">{% include "components/form_field.html" with field=form.status %}</div>{% endif %}
         {% if form.owner %}<div class="col-sm-6">{% include "components/form_field.html" with field=form.owner %}</div>{% endif %}
