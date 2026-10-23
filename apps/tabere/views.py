@@ -226,7 +226,10 @@ class ParticipantGoesView(PermissionRequiredMixin, View):
     def post(self, request, pk):
         opportunity = participant_for(request.user, pk)
         opportunity.contact_goes = request.POST.get("contact_goes") == "1"
-        opportunity.save(update_fields=["contact_goes", "updated_at"])
+        if not opportunity.contact_goes:
+            # Not coming any more: their bed is free again.
+            opportunity.contact_room = None
+        opportunity.save(update_fields=["contact_goes", "contact_room", "updated_at"])
         name = opportunity.contact.name
         verb = "merge" if opportunity.contact_goes else "nu mai merge"
         messages.success(request, f"{name} {verb} în „{opportunity.camp.name}”.")

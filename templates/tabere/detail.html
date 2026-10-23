@@ -15,6 +15,11 @@
 {% endblock %}
 
 {% block page_actions %}
+  {% if perms.tabere.change_room %}
+    <a class="btn btn-primary" href="{% url 'tabere:configurator' camp.pk %}">
+      <i class="bi bi-diagram-3 me-1" aria-hidden="true"></i>Configurator
+    </a>
+  {% endif %}
   {% if perms.tabere.change_camp %}
     <a class="btn btn-outline-secondary" href="{% url 'tabere:update' camp.pk %}">
       <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editează

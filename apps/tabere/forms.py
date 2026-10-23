@@ -3,7 +3,7 @@ from django import forms
 from apps.accounts.roles import team_members
 from apps.core.forms import BootstrapFormMixin, UserChoiceField
 
-from .models import Camp, Child, Task
+from .models import Camp, Child, Room, Task
 
 
 class CampForm(BootstrapFormMixin, forms.ModelForm):
@@ -68,3 +68,23 @@ class ChildForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["age"].required = True
+
+
+class RoomBatchForm(BootstrapFormMixin, forms.Form):
+    """ "5 camere de 4 locuri": adds that many rooms, numbered after the existing ones."""
+
+    count = forms.IntegerField(label="Camere", min_value=1, max_value=50, initial=1)
+    capacity = forms.IntegerField(label="Locuri în fiecare", min_value=1, max_value=50, initial=4)
+
+    def save(self, camp):
+        last = camp.rooms.count()
+        rooms = [
+            Room(
+                camp=camp,
+                name=f"Camera {last + number}",
+                capacity=self.cleaned_data["capacity"],
+                order=last + number,
+            )
+            for number in range(1, self.cleaned_data["count"] + 1)
+        ]
+        return Room.objects.bulk_create(rooms)

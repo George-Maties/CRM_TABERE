@@ -1,6 +1,6 @@
 from django.urls import path
 
-from . import views
+from . import rooms, views
 
 app_name = "tabere"
 
@@ -17,4 +17,9 @@ urlpatterns = [
         "participanti/<int:pk>/merge/", views.ParticipantGoesView.as_view(), name="participant-goes"
     ),
     path("copii/<int:pk>/sterge/", views.ChildDeleteView.as_view(), name="child-delete"),
+    path("<int:pk>/configurator/", rooms.ConfiguratorView.as_view(), name="configurator"),
+    path("<int:pk>/camere/", rooms.RoomBatchCreateView.as_view(), name="rooms-add"),
+    path("<int:pk>/camere/muta/", rooms.OccupantMoveView.as_view(), name="occupant-move"),
+    path("<int:pk>/camere/excel/", rooms.RoomsExcelView.as_view(), name="rooms-excel"),
+    path("camere/<int:pk>/sterge/", rooms.RoomDeleteView.as_view(), name="room-delete"),
 ]

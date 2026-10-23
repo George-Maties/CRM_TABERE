@@ -49,7 +49,11 @@ ROLES = {
         "tabere.change_camp",
         "tabere.delete_camp",
         "tabere.delete_task",
-        # The accommodation list (Cazări) is only for founders
+        # Rooms of a camp (the configurator) and the accommodation list are only for founders
+        "tabere.view_room",
+        "tabere.add_room",
+        "tabere.change_room",
+        "tabere.delete_room",
         "cazari.view_accommodation",
         "cazari.add_accommodation",
         "cazari.change_accommodation",

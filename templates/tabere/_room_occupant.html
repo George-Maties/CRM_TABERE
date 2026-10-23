@@ -1,0 +1,13 @@
+{% comment %}
+  Someone placed in a room of the configurator (the same markup is in its <template>).
+{% endcomment %}
+<li class="room-occupant{% if occupant.adult %} is-adult{% endif %}" draggable="true" data-occupant="{{ occupant.key }}">
+  <i class="bi {% if occupant.adult %}bi-person-badge{% else %}bi-person{% endif %}" aria-hidden="true"></i>
+  <span class="room-occupant-text">
+    <span class="room-occupant-name" data-name>{{ occupant.name }}</span>
+    <span class="room-occupant-meta" data-meta>{% if occupant.adult %}{{ occupant.details }}{% else %}{{ occupant.details }}{% if occupant.details %} · {% endif %}{{ occupant.family }}{% endif %}</span>
+  </span>
+  <button type="button" class="room-occupant-remove" data-unplace aria-label="Scoate pe {{ occupant.name }} din cameră" title="Scoate din cameră">
+    <i class="bi bi-x-lg" aria-hidden="true"></i>
+  </button>
+</li>

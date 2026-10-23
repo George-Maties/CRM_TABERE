@@ -57,8 +57,17 @@ class Opportunity(models.Model):
         related_name="opportunities",
         verbose_name="tabără",
     )
-    # The parent or teacher comes to the camp too (with the children), taking a seat.
+    # The parent or teacher comes to the camp too (with the children), taking a seat,
+    # in a room of the camp chosen in the configurator.
     contact_goes = models.BooleanField("merge în tabără", default=False)
+    contact_room = models.ForeignKey(
+        "tabere.Room",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="adults",
+        verbose_name="camera contactului",
+    )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -122,10 +131,15 @@ class Opportunity(models.Model):
             raise ValueError("A won or lost opportunity can't become potential again.")
         change = f"{self.get_status_display()} → {Status(new_status).label}"
         self.status = new_status
-        self.camp = camp if new_status == Status.WON else None
+        new_camp = camp if new_status == Status.WON else None
+        if new_camp != self.camp:
+            # Rooms belong to a camp: leaving it frees the beds of the contact and children.
+            self.contact_room = None
+            self.children.update(room=None)
+        self.camp = new_camp
         if self.camp:
             change += f" · {self.camp.name}"
-        self.save(update_fields=["status", "camp", "updated_at"])
+        self.save(update_fields=["status", "camp", "contact_room", "updated_at"])
         if reason:
             self.notes.create(author=user, text=reason)
         self.notes.create(author=user, status_change=change, new_status=new_status)

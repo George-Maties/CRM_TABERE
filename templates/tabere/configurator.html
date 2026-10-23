@@ -1,0 +1,145 @@
+{% extends "layouts/page.html" %}
+{% load static ui %}
+
+{% block title %}Configurator · {{ camp.name }}{% endblock %}
+{% block page_title %}Configurator cazare{% endblock %}
+{% block page_subtitle %}
+  <p class="page-subtitle">
+    <a href="{{ camp.get_absolute_url }}"><i class="bi bi-arrow-left" aria-hidden="true"></i> {{ camp.name }}</a>
+    {% if camp.accommodation %}<span><i class="bi bi-house-door" aria-hidden="true"></i> {{ camp.accommodation }}</span>{% endif %}
+  </p>
+{% endblock %}
+
+{% block page_actions %}
+  {% if perms.tabere.view_room %}
+    <a class="btn btn-outline-secondary" href="{% url 'tabere:rooms-excel' camp.pk %}">
+      <i class="bi bi-file-earmark-spreadsheet me-1" aria-hidden="true"></i>Descarcă Excel
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block page_content %}
+  {# Drag someone onto a room, or tap them and then "Pune aici" (phones); saved at once. #}
+  <div class="configurator" data-configurator data-move-url="{% url 'tabere:occupant-move' camp.pk %}">
+    {% csrf_token %}
+    <div class="row g-4">
+      <div class="col-lg-7 col-xl-8">
+        <section class="card">
+          <div class="card-body">
+            <h2 class="card-title-sm">
+              Camere
+              <span class="count-pill">{{ rooms|length }}</span>
+              <span class="text-body-secondary small fw-normal" data-summary>{{ placed_count }} din {{ people_count|plural:"persoană,persoane" }} cazate · {{ bed_count|plural:"loc,locuri" }}</span>
+            </h2>
+            {% if perms.tabere.add_room %}
+              <form class="room-batch" method="post" action="{% url 'tabere:rooms-add' camp.pk %}" novalidate data-loading-text="Se adaugă…">
+                {% csrf_token %}
+                <div class="room-batch-field">
+                  <label class="form-label small" for="{{ room_form.count.id_for_label }}">{{ room_form.count.label }}</label>
+                  {{ room_form.count }}
+                </div>
+                <span class="room-batch-x" aria-hidden="true">×</span>
+                <div class="room-batch-field">
+                  <label class="form-label small" for="{{ room_form.capacity.id_for_label }}">{{ room_form.capacity.label }}</label>
+                  {{ room_form.capacity }}
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adaugă camere</button>
+              </form>
+              {% for field in room_form %}{% for error in field.errors %}<div class="invalid-feedback d-block">{{ field.label }}: {{ error }}</div>{% endfor %}{% endfor %}
+            {% endif %}
+
+            {% if rooms %}
+              <div class="room-grid">
+                {% for room in rooms %}
+                  <section class="room{% if not room.free %} is-full{% endif %}" data-room="{{ room.pk }}" data-capacity="{{ room.capacity }}" data-name="{{ room.name }}" aria-label="{{ room.name }}">
+                    <header class="room-header">
+                      <h3 class="room-name">{{ room.name }}</h3>
+                      <span class="room-count" data-room-count>{{ room.occupants|length }}/{{ room.capacity }}</span>
+                      {% if perms.tabere.delete_room %}
+                        <form method="post" action="{% url 'tabere:room-delete' room.pk %}" data-confirm="Ștergeți {{ room.name }}? Cine e în ea rămâne fără cameră.">
+                          {% csrf_token %}
+                          <button class="btn-icon room-delete" type="submit" aria-label="Șterge {{ room.name }}" title="Șterge camera">
+                            <i class="bi bi-trash" aria-hidden="true"></i>
+                          </button>
+                        </form>
+                      {% endif %}
+                    </header>
+                    <ul class="room-occupants" data-room-list>
+                      {% for occupant in room.occupants %}
+                        {% include "tabere/_room_occupant.html" %}
+                      {% endfor %}
+                      {% for slot in room.free_slots %}<li class="room-slot" aria-hidden="true"></li>{% endfor %}
+                    </ul>
+                    <div class="room-free" data-room-free>{% if room.free %}{{ room.free|plural:"loc liber,locuri libere" }}{% else %}Plină{% endif %}</div>
+                    <button type="button" class="btn btn-sm btn-primary room-place" data-place-here hidden>Pune aici</button>
+                  </section>
+                {% endfor %}
+              </div>
+            {% else %}
+              {% include "components/empty_state.html" with icon="bi-door-closed" text="Nicio cameră încă. Spuneți câte camere de câte locuri are cazarea, apoi puneți participanții în ele." %}
+            {% endif %}
+          </div>
+        </section>
+      </div>
+
+      <div class="col-lg-5 col-xl-4">
+        <section class="card roster-card">
+          <div class="card-body">
+            <h2 class="card-title-sm">Participanți <span class="count-pill">{{ people_count }}</span></h2>
+            <p class="small text-body-secondary">Trageți pe cineva într-o cameră, sau atingeți-l și apoi „Pune aici”. Se salvează imediat.</p>
+            {% if participants %}
+              <ul class="roster" data-room="" data-roster aria-label="Participanți; aduceți pe cineva aici ca să-l scoateți din cameră">
+                {% for opportunity in participants %}
+                  <li class="roster-family">
+                    <div class="roster-contact">
+                      <span class="fw-semibold">{{ opportunity.contact.name }}</span>
+                      <span class="small text-body-secondary">{{ opportunity.contact.get_kind_display }}</span>
+                    </div>
+                    {% if opportunity.occupants %}
+                      <ul class="roster-people">
+                        {% for occupant in opportunity.occupants %}
+                          <li>
+                            {# Not a <button>: Firefox can't drag those. Enter or Space chooses it (configurator.js). #}
+                            <div role="button" tabindex="0" class="roster-person{% if occupant.adult %} is-adult{% endif %}{% if occupant.room_id %} is-placed{% endif %}" draggable="true"
+                                    data-occupant="{{ occupant.key }}" data-label="{{ occupant.name }}"
+                                    data-meta="{% if occupant.adult %}{{ occupant.details }}{% else %}{{ occupant.details }}{% if occupant.details %} · {% endif %}{{ occupant.family }}{% endif %}"
+                                    data-adult="{{ occupant.adult|yesno:'1,0' }}" aria-pressed="false">
+                              <i class="bi bi-grip-vertical roster-grip" aria-hidden="true"></i>
+                              <span class="roster-person-name">{{ occupant.name }}{% if occupant.adult %} <span class="small text-body-secondary">(adult)</span>{% endif %}</span>
+                              <span class="roster-room" data-roster-room>{{ occupant.room_name|default:"Fără cameră" }}</span>
+                            </div>
+                          </li>
+                        {% endfor %}
+                      </ul>
+                    {% else %}
+                      <p class="small text-body-secondary mb-0 ms-3">Niciun copil adăugat încă.</p>
+                    {% endif %}
+                  </li>
+                {% endfor %}
+              </ul>
+            {% else %}
+              <p class="text-body-secondary mb-0">Tabăra nu are încă participanți.</p>
+            {% endif %}
+          </div>
+        </section>
+      </div>
+    </div>
+
+    <template id="room-occupant-template">
+      <li class="room-occupant" draggable="true" data-occupant="">
+        <i class="bi bi-person" aria-hidden="true"></i>
+        <span class="room-occupant-text">
+          <span class="room-occupant-name" data-name></span>
+          <span class="room-occupant-meta" data-meta></span>
+        </span>
+        <button type="button" class="room-occupant-remove" data-unplace aria-label="Scoate din cameră" title="Scoate din cameră">
+          <i class="bi bi-x-lg" aria-hidden="true"></i>
+        </button>
+      </li>
+    </template>
+  </div>
+{% endblock %}
+
+{% block extra_js %}
+  <script src="{% static 'js/configurator.js' %}" defer></script>
+{% endblock %}

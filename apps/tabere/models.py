@@ -133,6 +133,28 @@ class Task(TaskBase):
     parent_icon = "bi-backpack"
 
 
+class Room(models.Model):
+    """A room of the camp's accommodation, filled from the configurator."""
+
+    camp = models.ForeignKey(
+        Camp, on_delete=models.CASCADE, related_name="rooms", verbose_name="tabără"
+    )
+    name = models.CharField("nume", max_length=100)
+    capacity = models.PositiveSmallIntegerField(
+        "locuri", validators=[MinValueValidator(1), MaxValueValidator(50)]
+    )
+    # Rooms keep the order they were added in.
+    order = models.PositiveIntegerField("ordine", default=0)
+
+    class Meta:
+        ordering = ["order", "pk"]
+        verbose_name = "cameră"
+        verbose_name_plural = "camere"
+
+    def __str__(self):
+        return self.name
+
+
 class Child(models.Model):
     """A child who comes to camp: listed on the camp page under the contact (the parent or
     teacher) whose won opportunity brought them."""
@@ -153,6 +175,15 @@ class Child(models.Model):
     city = models.CharField("oraș", max_length=200, blank=True)
     # Medical data about a minor: shown only to whoever works the contact (see the camp page).
     medical_notes = models.TextField("probleme medicale", blank=True)
+    # Set in the configurator; a room of the camp the child goes to.
+    room = models.ForeignKey(
+        Room,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="children",
+        verbose_name="cameră",
+    )
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,

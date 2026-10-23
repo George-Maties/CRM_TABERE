@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Camp, Child, Task
+from .models import Camp, Child, Room, Task
 
 
 class TaskInline(admin.TabularInline):
@@ -25,3 +25,9 @@ class TaskAdmin(admin.ModelAdmin):
 class ChildAdmin(admin.ModelAdmin):
     list_display = ["name", "age", "city", "opportunity"]
     search_fields = ["name", "opportunity__contact__name"]
+
+
+@admin.register(Room)
+class RoomAdmin(admin.ModelAdmin):
+    list_display = ["name", "capacity", "camp"]
+    list_filter = ["camp"]
