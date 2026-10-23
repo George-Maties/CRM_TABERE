@@ -78,6 +78,115 @@
     sync();
   });
 
+  // [data-check-all="name"]: tick / untick every checkbox with that name in the same form;
+  // [data-check-count="name"] shows how many are ticked (data-label-none/-one/-many, where
+  // {n} is the count and {de} the "de " Romanian puts after numbers from 20 up)
+  document.querySelectorAll("[data-check-all]").forEach(function (master) {
+    var form = master.form || master.closest("form");
+    if (!form) return;
+    var name = master.dataset.checkAll;
+    var boxes = form.querySelectorAll('input[type="checkbox"][name="' + name + '"]');
+    var counters = form.querySelectorAll('[data-check-count="' + name + '"]');
+    function sync() {
+      var ticked = 0;
+      boxes.forEach(function (box) {
+        if (box.checked) ticked += 1;
+      });
+      master.checked = ticked > 0 && ticked === boxes.length;
+      master.indeterminate = ticked > 0 && ticked < boxes.length;
+      counters.forEach(function (counter) {
+        var label = ticked === 0 ? counter.dataset.labelNone
+          : ticked === 1 ? counter.dataset.labelOne : counter.dataset.labelMany;
+        var de = ticked % 100 >= 20 || (ticked > 0 && ticked % 100 === 0) ? "de " : "";
+        counter.textContent = label.replace("{n}", ticked).replace("{de}", de);
+        counter.classList.toggle("is-active", ticked > 0);
+      });
+    }
+    master.addEventListener("change", function () {
+      boxes.forEach(function (box) {
+        box.checked = master.checked;
+      });
+      sync();
+    });
+    boxes.forEach(function (box) {
+      box.addEventListener("change", sync);
+    });
+    // Coming back with Back restores the ticks; show their count again.
+    window.addEventListener("pageshow", sync);
+    sync();
+  });
+
+  // Notifications (components/notifications.html): each closes by itself when its countdown
+  // line runs out, or with its × button. notify("Text", "success") shows one from JavaScript;
+  // the type is success, info, warning or danger.
+  var notifications = document.getElementById("notifications");
+  var reduceMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+
+  function dismissNotification(item) {
+    if (item.classList.contains("is-leaving")) return;
+    item.classList.add("is-leaving");
+    item.addEventListener("animationend", function (event) {
+      if (event.target !== item) return;
+      if (reduceMotion.matches || !item.animate) {
+        item.remove();
+        return;
+      }
+      // Close the gap smoothly, so the notifications below slide up instead of jumping.
+      item.style.overflow = "hidden";
+      item
+        .animate(
+          [
+            { height: item.offsetHeight + "px" },
+            { height: "0px", paddingTop: "0px", paddingBottom: "0px", marginBottom: "-0.625rem" },
+          ],
+          { duration: 180, easing: "ease-out" }
+        )
+        .finished.then(function () {
+          item.remove();
+        });
+    });
+  }
+
+  function setUpNotification(item) {
+    item.style.setProperty("--notification-timeout", (item.dataset.timeout || 5000) + "ms");
+    var progress = item.querySelector(".notification-progress");
+    if (progress) {
+      progress.addEventListener("animationend", function () {
+        dismissNotification(item);
+      });
+    }
+    var close = item.querySelector("[data-notification-close]");
+    if (close) {
+      close.addEventListener("click", function () {
+        dismissNotification(item);
+      });
+    }
+  }
+
+  function notify(text, type, options) {
+    var template = document.querySelector(
+      '[data-notification-template="' + (type || "info") + '"]'
+    ) || document.querySelector('[data-notification-template="info"]');
+    if (!notifications || !template) return null;
+    var item = template.content.firstElementChild.cloneNode(true);
+    item.querySelector(".notification-text").textContent = text;
+    if (options && options.timeout) item.dataset.timeout = options.timeout;
+    setUpNotification(item);
+    notifications.prepend(item);
+    return item;
+  }
+
+  if (notifications) {
+    notifications.querySelectorAll("[data-notification]").forEach(setUpNotification);
+    // A notification left in a hidden tab waits there until the tab is seen again.
+    function syncPause() {
+      notifications.classList.toggle("is-paused", document.hidden);
+    }
+    document.addEventListener("visibilitychange", syncPause);
+    syncPause();
+  }
+  window.notify = notify;
+
   // form[data-loading-text]: show progress on the submit button once the request starts
   document.querySelectorAll("form[data-loading-text]").forEach(function (form) {
     var button = form.querySelector('[type="submit"]');

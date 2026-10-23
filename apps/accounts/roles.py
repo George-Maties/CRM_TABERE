@@ -30,9 +30,12 @@ _SELLER_PERMISSIONS = [
 ]
 
 ROLES = {
-    # Sees every opportunity and can delete; cannot manage users (no admin access).
+    # Sees every contact and opportunity, assigns contacts to sellers and can delete;
+    # cannot manage users (no admin access).
     FOUNDER: [
         *_SELLER_PERMISSIONS,
+        "contacte.view_all_contacts",
+        "contacte.assign_contact",
         "contacte.delete_contact",
         "oportunitati.delete_opportunity",
         "oportunitati.view_all_opportunities",
@@ -40,7 +43,7 @@ ROLES = {
         "tabere.delete_camp",
         "tabere.delete_task",
     ],
-    # Sees only the opportunities they own; cannot delete.
+    # Sees only the contacts assigned to them and the opportunities they own; cannot delete.
     SELLER: _SELLER_PERMISSIONS,
 }
 

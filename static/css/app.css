@@ -469,9 +469,156 @@ body {
   }
 }
 
-/* ---- Messages ---- */
-.app-messages:empty {
-  display: none;
+/* ---- Notifications (components/notifications.html, app.js) ---- */
+.notifications {
+  position: fixed;
+  top: calc(env(safe-area-inset-top, 0px) + 1rem);
+  right: calc(env(safe-area-inset-right, 0px) + 1rem);
+  z-index: 2000; /* above the navbar, the menu on phones and dialogs */
+  display: flex;
+  flex-direction: column;
+  gap: 0.625rem;
+  width: min(23rem, calc(100vw - 2rem));
+  pointer-events: none; /* the empty corner never blocks clicks */
+}
+
+.notification {
+  --notification-bg: var(--app-notify-info-bg);
+  --notification-ink: var(--app-notify-info-ink);
+  position: relative;
+  display: flex;
+  align-items: flex-start;
+  gap: 0.75rem;
+  padding: 0.875rem 0.75rem 1.0625rem 1rem;
+  overflow: hidden;
+  color: var(--notification-ink);
+  background-color: var(--notification-bg);
+  border-radius: 0.75rem;
+  box-shadow: var(--app-notify-shadow);
+  pointer-events: auto;
+  animation: notification-in 0.35s cubic-bezier(0.2, 0.9, 0.3, 1.15) both;
+}
+
+.notification-success {
+  --notification-bg: var(--app-notify-success-bg);
+  --notification-ink: var(--app-notify-success-ink);
+}
+
+.notification-danger {
+  --notification-bg: var(--app-notify-danger-bg);
+  --notification-ink: var(--app-notify-danger-ink);
+}
+
+.notification-warning {
+  --notification-bg: var(--app-notify-warning-bg);
+  --notification-ink: var(--app-notify-warning-ink);
+}
+
+.notification.is-leaving {
+  animation: notification-out 0.22s ease-in forwards;
+}
+
+.notification-icon {
+  flex: none;
+  font-size: 1.25rem;
+  line-height: 1.25;
+}
+
+.notification-text {
+  flex: 1;
+  min-width: 0;
+  padding-top: 0.0625rem;
+  font-weight: 500;
+  line-height: 1.4;
+  overflow-wrap: anywhere;
+}
+
+.notification-close {
+  display: grid;
+  flex: none;
+  place-items: center;
+  width: 1.75rem;
+  height: 1.75rem;
+  margin: -0.125rem -0.125rem -0.125rem 0;
+  padding: 0;
+  font-size: 0.875rem;
+  color: inherit;
+  background: transparent;
+  border: 0;
+  border-radius: 0.375rem;
+  opacity: 0.8;
+}
+
+.notification-close:hover {
+  background-color: rgba(255, 255, 255, 0.18);
+  opacity: 1;
+}
+
+/* Light fills (yellow; info in the dark theme) darken instead */
+.notification-warning .notification-close:hover,
+[data-bs-theme="dark"] .notification:not(.notification-success, .notification-danger) .notification-close:hover {
+  background-color: rgba(0, 0, 0, 0.08);
+}
+
+.notification-close:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 1px;
+}
+
+/* Countdown line: empties from right to left in the notification's time (data-timeout).
+   Stops while the pointer or the keyboard focus is on the notification, or the tab is hidden. */
+.notification::after,
+.notification-progress {
+  position: absolute;
+  right: 0;
+  bottom: 0;
+  left: 0;
+  height: 0.1875rem;
+  background-color: currentColor;
+}
+
+.notification::after {
+  content: "";
+  opacity: 0.18; /* the track */
+}
+
+.notification-progress {
+  z-index: 1;
+  opacity: 0.75;
+  transform-origin: left center;
+  animation: notification-countdown linear forwards;
+  /* !important: it is information, not decoration, so it keeps its real duration even
+     when the reduced-motion rule (theme.css) shortens every other animation */
+  animation-duration: var(--notification-timeout, 5000ms) !important;
+}
+
+.notification:hover .notification-progress,
+.notification:focus-within .notification-progress,
+.notifications.is-paused .notification-progress {
+  animation-play-state: paused;
+}
+
+@keyframes notification-in {
+  from {
+    opacity: 0;
+    transform: translateX(calc(100% + 1.5rem));
+  }
+}
+
+@keyframes notification-out {
+  to {
+    opacity: 0;
+    transform: translateX(calc(100% + 1.5rem));
+  }
+}
+
+@keyframes notification-countdown {
+  from {
+    transform: scaleX(1);
+  }
+  to {
+    transform: scaleX(0);
+  }
 }
 
 /* ---- Page header (layouts/page.html) ---- */
@@ -600,6 +747,41 @@ body {
 
 .toolbar-select {
   width: auto;
+}
+
+/* ---- Bulk actions bar: on top of a list with checkboxes ---- */
+.bulk-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+  padding: 0.75rem 1rem;
+  border-bottom: 1px solid var(--bs-border-color);
+}
+
+.bulk-count {
+  margin-right: auto;
+  font-size: 0.875rem;
+  color: var(--app-muted);
+}
+
+.bulk-count.is-active {
+  font-weight: 600;
+  color: var(--app-accent);
+}
+
+.bulk-bar .form-select {
+  width: auto;
+  max-width: 100%;
+}
+
+.table .col-check {
+  width: 1%;
+  padding-right: 0;
+}
+
+.table .col-check .form-check-input {
+  margin-top: 0;
 }
 
 /* ---- Tables ---- */

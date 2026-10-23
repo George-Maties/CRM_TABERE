@@ -1,0 +1,13 @@
+{% comment %}
+  One notification. Usage: {% include "components/notification.html" with level="success" text="Salvat." %}
+  level: success, info, warning or danger (anything else looks like info).
+  Errors stay longer and are announced right away (role="alert").
+{% endcomment %}
+<div class="notification notification-{{ level }}" role="{% if level == 'danger' %}alert{% else %}status{% endif %}" data-notification data-timeout="{% if level == 'danger' %}8000{% elif level == 'warning' %}7000{% else %}5000{% endif %}">
+  <i class="notification-icon bi {% if level == 'success' %}bi-check-circle-fill{% elif level == 'danger' %}bi-x-circle-fill{% elif level == 'warning' %}bi-exclamation-triangle-fill{% else %}bi-info-circle-fill{% endif %}" aria-hidden="true"></i>
+  <div class="notification-text">{{ text }}</div>
+  <button type="button" class="notification-close" data-notification-close aria-label="Închide notificarea">
+    <i class="bi bi-x-lg" aria-hidden="true"></i>
+  </button>
+  <span class="notification-progress" aria-hidden="true"></span>
+</div>

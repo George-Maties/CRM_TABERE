@@ -38,11 +38,32 @@
               <dt>Observații</dt>
               <dd class="text-prewrap">{{ contact.notes }}</dd>
             {% endif %}
+            <dt>Atribuit lui</dt>
+            <dd>{% if contact.assigned_to %}{{ contact.assigned_to|display_name }}{% else %}<span class="badge rounded-pill status-badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Neatribuit</span>{% endif %}</dd>
             <dt>Adăugat</dt>
             <dd>{{ contact.created_at|date:"j F Y"|lower }}{% if contact.created_by %} de {{ contact.created_by|display_name }}{% endif %}</dd>
           </dl>
         </div>
       </section>
+
+      {% if assign_form %}
+        <section class="card mt-4" id="atribuire">
+          <div class="card-body">
+            <h2 class="card-title-sm">Atribuire</h2>
+            <form method="post" action="{% url 'contacte:assign' %}" novalidate data-loading-text="Se atribuie…">
+              {% csrf_token %}
+              <input type="hidden" name="contacts" value="{{ contact.pk }}">
+              <input type="hidden" name="next" value="{{ contact.get_absolute_url }}">
+              {% include "components/form_field.html" with field=assign_form.assigned_to %}
+              <div class="form-check mb-3">
+                {{ assign_form.move_opportunities }}
+                <label class="form-check-label" for="{{ assign_form.move_opportunities.id_for_label }}">{{ assign_form.move_opportunities.label }}</label>
+              </div>
+              <button type="submit" class="btn btn-outline-secondary btn-sm"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Atribuie</button>
+            </form>
+          </div>
+        </section>
+      {% endif %}
     </div>
 
     <div class="col-lg-8">

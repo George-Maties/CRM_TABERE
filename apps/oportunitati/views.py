@@ -86,7 +86,9 @@ class OpportunityCreateView(PermissionRequiredMixin, CreateView):
         initial = {"owner": self.request.user}
         contact_id = self.request.GET.get("contact")
         if contact_id and contact_id.isdigit():
-            initial["contact"] = Contact.objects.filter(pk=contact_id).first()
+            initial["contact"] = (
+                Contact.objects.visible_to(self.request.user).filter(pk=contact_id).first()
+            )
         return initial
 
     def get_form_kwargs(self):
@@ -97,6 +99,11 @@ class OpportunityCreateView(PermissionRequiredMixin, CreateView):
         if "owner" not in form.fields:
             form.instance.owner = self.request.user
         response = super().form_valid(form)
+        contact = self.object.contact
+        if contact.assigned_to_id is None:
+            # Whoever works the opportunity works the contact, until a founder decides otherwise.
+            contact.assigned_to = self.object.owner
+            contact.save(update_fields=["assigned_to", "updated_at"])
         if form.cleaned_data["note"]:
             self.object.notes.create(author=self.request.user, text=form.cleaned_data["note"])
         messages.success(self.request, "Oportunitatea a fost creată.")

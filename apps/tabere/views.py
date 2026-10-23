@@ -7,6 +7,7 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
+from apps.contacte.models import Contact
 from apps.oportunitati.models import Opportunity, Status
 
 from .forms import CampForm, TaskForm
@@ -42,9 +43,15 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
             .filter(camp=self.object)
             .values_list("pk", flat=True)
         )
+        visible_contact_ids = set(
+            Contact.objects.visible_to(self.request.user)
+            .filter(opportunities__camp=self.object)
+            .values_list("pk", flat=True)
+        )
         context = {
             "participants": participants,
             "visible_ids": visible_ids,
+            "visible_contact_ids": visible_contact_ids,
             "tasks": self.object.tasks.select_related("assigned_to", "created_by"),
             "task_form": TaskForm(initial={"assigned_to": self.request.user}),
         }

@@ -53,8 +53,8 @@
               <tbody>
                 {% for opportunity in participants %}
                   <tr>
-                    <td><a class="fw-semibold row-link" href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a></td>
-                    <td class="text-nowrap">{% if opportunity.contact.phone %}<a href="tel:{{ opportunity.contact.phone }}">{{ opportunity.contact.phone }}</a>{% else %}—{% endif %}</td>
+                    <td>{% if opportunity.contact_id in visible_contact_ids %}<a class="fw-semibold row-link" href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a>{% else %}<span class="fw-semibold">{{ opportunity.contact.name }}</span>{% endif %}</td>
+                    <td class="text-nowrap">{% if opportunity.contact.phone and opportunity.contact_id in visible_contact_ids %}<a href="tel:{{ opportunity.contact.phone }}">{{ opportunity.contact.phone }}</a>{% else %}—{% endif %}</td>
                     <td class="d-none d-md-table-cell">
                       {% if opportunity.pk in visible_ids %}<a href="{{ opportunity.get_absolute_url }}">{{ opportunity.title }}</a>{% else %}{{ opportunity.title }}{% endif %}
                     </td>

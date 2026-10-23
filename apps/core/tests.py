@@ -58,3 +58,15 @@ def test_sidebar_by_role(rf, django_user_model, seller):
 
     request.user = django_user_model.objects.create_user(username="fara-rol")
     assert [item["label"] for item in sidebar_items(request)] == ["Wall"]
+
+
+def test_messages_show_as_notifications(seller_client):
+    response = seller_client.post(
+        reverse("contacte:create"), {"name": "Elena Stan", "kind": "parinte"}, follow=True
+    )
+
+    html = response.content.decode()
+    assert 'class="notification notification-success"' in html
+    assert "Contactul „Elena Stan” a fost adăugat." in html
+    # Blueprints for notify() in JavaScript, one per type
+    assert html.count("data-notification-template=") == 4

@@ -70,6 +70,8 @@ def test_create_with_status_needs_note(seller_client, contact):
 
 
 def test_seller_creates_opportunity_from_contact(seller_client, seller, contact):
+    contact.assigned_to = seller
+    contact.save()
 
     response = seller_client.post(
         reverse("oportunitati:create"),
@@ -94,6 +96,22 @@ def test_founder_assigns_opportunity_to_seller(founder_client, seller, contact):
     )
 
     assert Opportunity.objects.get(title="Grup școală").owner == seller
+    contact.refresh_from_db()
+    assert contact.assigned_to == seller
+
+
+def test_seller_cannot_create_opportunity_for_contact_not_assigned_to_them(
+    seller_client, other_seller, contact
+):
+    contact.assigned_to = other_seller
+    contact.save()
+
+    response = seller_client.post(
+        reverse("oportunitati:create"), {"contact": contact.pk, "title": "X", "status": "nou"}
+    )
+
+    assert response.context["form"].errors["contact"]
+    assert not Opportunity.objects.exists()
 
 
 def _change_status(client, opportunity, **data):

@@ -50,8 +50,8 @@ python manage.py seed_demo --reset    # le recreează (șterge doar contactele c
 | Rol | Cine | Ce poate |
 |---|---|---|
 | Dev | superuser | tot, inclusiv administrarea utilizatorilor |
-| Fondator | grupul „Fondator” | vede toate oportunitățile, poate șterge; nu gestionează utilizatori |
-| Vânzător | grupul „Vânzător” | vede doar oportunitățile lui; poate crea tabere și sarcini, dar nu poate edita tabere; nu poate șterge |
+| Fondator | grupul „Fondator” | vede toate contactele și oportunitățile, atribuie contacte vânzătorilor, poate șterge; nu gestionează utilizatori |
+| Vânzător | grupul „Vânzător” | vede doar contactele atribuite lui și oportunitățile lui; poate crea tabere și sarcini, dar nu poate edita tabere; nu poate șterge |
 
 Rolurile se atribuie din Administrare → Utilizatori → grupuri. Rolurile noi se creează tot acolo, ca grupuri cu permisiunile bifate. Definițiile rolurilor de bază sunt în `apps/accounts/roles.py`.
 

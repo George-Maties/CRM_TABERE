@@ -1,0 +1,16 @@
+{% comment %}
+  Notifications in the top right corner, on every page (included once, in base.html).
+  - From Python: messages.success(request, "…") (also .info, .warning, .error) before a redirect.
+  - From JavaScript: notify("…", "success") (also "info", "warning", "danger").
+  Each closes by itself after a few seconds; the line at the bottom shows how long is left.
+{% endcomment %}
+<div class="notifications" id="notifications">
+  {% for message in messages %}
+    {% include "components/notification.html" with level=message.level_tag text=message %}
+  {% endfor %}
+</div>
+{# Blueprints for notify(): the same markup, filled in by app.js #}
+<template data-notification-template="success">{% include "components/notification.html" with level="success" text="" %}</template>
+<template data-notification-template="info">{% include "components/notification.html" with level="info" text="" %}</template>
+<template data-notification-template="warning">{% include "components/notification.html" with level="warning" text="" %}</template>
+<template data-notification-template="danger">{% include "components/notification.html" with level="danger" text="" %}</template>

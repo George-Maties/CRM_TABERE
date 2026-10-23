@@ -2,6 +2,7 @@ from django import forms
 from django.db import transaction
 
 from apps.accounts.roles import team_members
+from apps.contacte.models import Contact
 from apps.core.forms import BootstrapFormMixin, UserChoiceField
 from apps.tabere.models import Camp
 
@@ -24,6 +25,7 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
+        self.fields["contact"].queryset = Contact.objects.visible_to(user)
         self.fields["owner"].queryset = team_members()
         # Only roles that see every opportunity may hand one to someone else;
         # anyone else owns what they create, so it never disappears from their list.

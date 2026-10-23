@@ -3,6 +3,7 @@
 
 {% block title %}Contacte{% endblock %}
 {% block page_title %}Contacte{% endblock %}
+{% block page_subtitle %}{% if not can_see_all %}<p class="page-subtitle">Contactele atribuite vouă</p>{% endif %}{% endblock %}
 
 {% block page_actions %}
   {% if perms.contacte.add_contact %}
@@ -27,40 +28,77 @@
         <option value="{{ value }}"{% if value == kind %} selected{% endif %}>{{ label }}</option>
       {% endfor %}
     </select>
+    {% if can_see_all %}
+      <label class="visually-hidden" for="atribuit">Atribuit lui</label>
+      <select class="form-select toolbar-select" id="atribuit" name="atribuit">
+        <option value="">Toată echipa</option>
+        <option value="{{ unassigned }}"{% if assignee == unassigned %} selected{% endif %}>Neatribuite</option>
+        {% for member in team %}
+          <option value="{{ member.pk }}"{% if assignee == member.pk|stringformat:"d" %} selected{% endif %}>{{ member|display_name }}</option>
+        {% endfor %}
+      </select>
+    {% endif %}
     <button class="btn btn-outline-secondary" type="submit">Caută</button>
-    {% if query or kind %}<a class="btn btn-link" href="{% url 'contacte:list' %}">Resetează</a>{% endif %}
+    {% if query or kind or assignee %}<a class="btn btn-link" href="{% url 'contacte:list' %}">Resetează</a>{% endif %}
   </form>
 
   {% if contact_list %}
+    {% if assign_form %}<form method="post" action="{% url 'contacte:assign' %}" novalidate data-loading-text="Se atribuie…">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% endif %}
     <div class="card">
+      {% if assign_form %}
+        <div class="bulk-bar">
+          <span class="bulk-count" data-check-count="contacts" data-label-none="Bifați contactele de atribuit" data-label-one="1 contact selectat" data-label-many="{n} {de}contacte selectate">Bifați contactele de atribuit</span>
+          <label class="visually-hidden" for="{{ assign_form.assigned_to.id_for_label }}">{{ assign_form.assigned_to.label }}</label>
+          {{ assign_form.assigned_to }}
+          <div class="form-check mb-0">
+            {{ assign_form.move_opportunities }}
+            <label class="form-check-label" for="{{ assign_form.move_opportunities.id_for_label }}">Mută și oportunitățile deschise</label>
+          </div>
+          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Atribuie</button>
+        </div>
+      {% endif %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
+              {% if assign_form %}
+                <th scope="col" class="col-check"><input class="form-check-input" type="checkbox" data-check-all="contacts" aria-label="Selectează toate contactele de pe pagină"></th>
+              {% endif %}
               <th scope="col">Nume</th>
               <th scope="col">Tip</th>
               <th scope="col">Telefon</th>
               <th scope="col" class="d-none d-md-table-cell">Email</th>
+              {% if can_see_all %}<th scope="col" class="d-none d-sm-table-cell">Atribuit</th>{% endif %}
             </tr>
           </thead>
           <tbody>
             {% for contact in contact_list %}
               <tr>
+                {% if assign_form %}
+                  <td class="col-check"><input class="form-check-input" type="checkbox" name="contacts" value="{{ contact.pk }}" aria-label="Selectează {{ contact.name }}"></td>
+                {% endif %}
                 <td><a class="fw-semibold row-link" href="{{ contact.get_absolute_url }}">{{ contact.name }}</a></td>
                 <td class="text-body-secondary">{{ contact.get_kind_display }}</td>
                 <td class="text-nowrap">{% if contact.phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% else %}<span class="text-body-secondary">—</span>{% endif %}</td>
                 <td class="d-none d-md-table-cell text-truncate">{{ contact.email|default:"—" }}</td>
+                {% if can_see_all %}
+                  <td class="d-none d-sm-table-cell">{% if contact.assigned_to %}{{ contact.assigned_to|display_name }}{% else %}<span class="badge rounded-pill status-badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Neatribuit</span>{% endif %}</td>
+                {% endif %}
               </tr>
             {% endfor %}
           </tbody>
         </table>
       </div>
     </div>
+    {% if assign_form %}</form>{% endif %}
     {% include "components/pagination.html" %}
-  {% elif query or kind %}
+  {% elif query or kind or assignee %}
     {% include "components/empty_state.html" with icon="bi-search" text="Niciun contact nu corespunde căutării." %}
-  {% else %}
+  {% elif can_see_all %}
     {% url 'contacte:create' as create_url %}
     {% include "components/empty_state.html" with icon="bi-person-lines-fill" text="Nu există încă niciun contact." action_url=create_url action_label="Adaugă contact" %}
+  {% else %}
+    {% url 'contacte:create' as create_url %}
+    {% include "components/empty_state.html" with icon="bi-person-lines-fill" text="Nu aveți încă niciun contact atribuit. Adăugați unul sau cereți unui fondator să vă atribuie contacte." action_url=create_url action_label="Adaugă contact" %}
   {% endif %}
 {% endblock %}
