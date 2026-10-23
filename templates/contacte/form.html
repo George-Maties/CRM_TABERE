@@ -12,13 +12,21 @@
         <div class="col-sm-6">{% include "components/form_field.html" with field=form.kind %}</div>
         <div class="col-sm-6">{% include "components/form_field.html" with field=form.phone %}</div>
       </div>
-      {% if form.assigned_to %}
-        <div class="row">
-          <div class="col-sm-6">{% include "components/form_field.html" with field=form.email %}</div>
-          <div class="col-sm-6">{% include "components/form_field.html" with field=form.assigned_to %}</div>
-        </div>
-      {% else %}
-        {% include "components/form_field.html" with field=form.email %}
+      {% include "components/form_field.html" with field=form.email %}
+      {% if form.assignees %}
+        <fieldset class="mb-3">
+          <legend class="form-label">{{ form.assignees.label|capfirst }}</legend>
+          <div class="assignee-checklist">
+            {% for option in form.assignees %}
+              <div class="form-check">
+                {{ option.tag }}
+                <label class="form-check-label" for="{{ option.id_for_label }}">{{ option.choice_label }}</label>
+              </div>
+            {% endfor %}
+          </div>
+          {% for error in form.assignees.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+          <div class="form-text">{{ form.assignees.help_text }}</div>
+        </fieldset>
       {% endif %}
       {% include "components/form_field.html" with field=form.notes %}
       <div class="form-actions">

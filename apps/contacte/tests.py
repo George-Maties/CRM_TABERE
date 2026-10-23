@@ -1,7 +1,7 @@
 import pytest
 from django.urls import reverse
 
-from apps.oportunitati.models import Opportunity, Status
+from apps.oportunitati.models import Opportunity
 
 from .models import Contact
 
@@ -16,9 +16,8 @@ def test_user_without_role_cannot_see_contacts(client, django_user_model):
 
 
 def test_seller_sees_and_searches_contacts(seller_client, seller, contact):
-    contact.assigned_to = seller
-    contact.save()
-    Contact.objects.create(name="Mihai Popa", assigned_to=seller)
+    contact.assignees.add(seller)
+    Contact.objects.create(name="Mihai Popa").assignees.add(seller)
 
     response = seller_client.get(reverse("contacte:list"), {"q": "ana"})
 
@@ -35,7 +34,7 @@ def test_seller_adds_contact(seller_client, seller):
     assert response.url == contact.get_absolute_url()
     assert contact.created_by == seller
     # What a seller adds is theirs, so it stays in their list.
-    assert contact.assigned_to == seller
+    assert list(contact.assignees.all()) == [seller]
 
 
 def test_seller_cannot_delete_contact(seller_client, contact):
@@ -70,19 +69,19 @@ def test_teacher_is_a_contact_kind(seller_client):
 
 
 def test_seller_sees_only_contacts_assigned_to_them(seller_client, seller, other_seller):
-    mine = Contact.objects.create(name="Al meu", assigned_to=seller)
-    Contact.objects.create(name="Al altcuiva", assigned_to=other_seller)
+    mine = Contact.objects.create(name="Al meu")
+    mine.assignees.add(seller)
+    Contact.objects.create(name="Al altcuiva").assignees.add(other_seller)
     Contact.objects.create(name="Neatribuit")
 
     response = seller_client.get(reverse("contacte:list"))
 
     assert list(response.context["contact_list"]) == [mine]
-    assert "assign_form" not in response.context
+    assert "assignable" not in response.context
 
 
 def test_seller_cannot_open_contact_assigned_to_someone_else(seller_client, other_seller, contact):
-    contact.assigned_to = other_seller
-    contact.save()
+    contact.assignees.add(other_seller)
 
     assert seller_client.get(contact.get_absolute_url()).status_code == 404
     assert seller_client.get(reverse("contacte:update", args=[contact.pk])).status_code == 404
@@ -91,15 +90,14 @@ def test_seller_cannot_open_contact_assigned_to_someone_else(seller_client, othe
 def test_seller_sees_contact_of_their_own_opportunity(
     seller_client, seller, other_seller, contact, make_opportunity
 ):
-    contact.assigned_to = other_seller
-    contact.save()
+    contact.assignees.add(other_seller)
     make_opportunity(seller)
 
     assert seller_client.get(contact.get_absolute_url()).status_code == 200
 
 
 def test_founder_sees_all_contacts_and_filters_unassigned(founder_client, seller, contact):
-    Contact.objects.create(name="Mihai Popa", assigned_to=seller)
+    Contact.objects.create(name="Mihai Popa").assignees.add(seller)
 
     everyone = founder_client.get(reverse("contacte:list"))
     unassigned = founder_client.get(reverse("contacte:list"), {"atribuit": "nimeni"})
@@ -112,103 +110,139 @@ def test_founder_sees_all_contacts_and_filters_unassigned(founder_client, seller
 
 def test_founder_assigns_contacts_in_bulk(founder_client, founder, seller, contact):
     other = Contact.objects.create(name="Mihai Popa")
-    open_one = Opportunity.objects.create(contact=contact, owner=founder)
-    won = Opportunity.objects.create(contact=contact, owner=founder, status=Status.WON)
+    opportunity = Opportunity.objects.create(contact=contact, owner=founder)
 
     response = founder_client.post(
         reverse("contacte:assign"),
         {
             "contacts": [contact.pk, other.pk],
-            "assigned_to": seller.pk,
-            "move_opportunities": "on",
+            "assignees": [seller.pk],
             "next": "/contacte/?atribuit=nimeni",
         },
     )
 
     assert response.url == "/contacte/?atribuit=nimeni"
-    assert set(Contact.objects.values_list("assigned_to", flat=True)) == {seller.pk}
-    open_one.refresh_from_db()
-    won.refresh_from_db()
-    # Open opportunities follow the contact; finished ones keep who closed them.
-    assert open_one.owner == seller
-    assert won.owner == founder
-
-
-def test_assigning_can_leave_opportunities_where_they_are(founder_client, founder, seller, contact):
-    opportunity = Opportunity.objects.create(contact=contact, owner=founder)
-
-    founder_client.post(
-        reverse("contacte:assign"), {"contacts": [contact.pk], "assigned_to": seller.pk}
-    )
-
+    assert list(contact.assignees.all()) == [seller]
+    assert list(other.assignees.all()) == [seller]
+    # Assigning a contact doesn't touch its opportunities.
     opportunity.refresh_from_db()
     assert opportunity.owner == founder
 
 
-def test_founder_unassigns_contact(founder_client, seller, contact):
-    contact.assigned_to = seller
-    contact.save()
-
-    founder_client.post(
-        reverse("contacte:update", args=[contact.pk]),
-        {"name": contact.name, "kind": "parinte", "assigned_to": ""},
+def test_contact_can_have_several_sellers(
+    founder_client, seller, other_seller, contact, client, make_opportunity
+):
+    response = founder_client.post(
+        reverse("contacte:assign"),
+        {"contacts": [contact.pk], "assignees": [seller.pk, other_seller.pk]},
+        follow=True,
     )
 
-    contact.refresh_from_db()
-    assert contact.assigned_to is None
+    assert set(contact.assignees.all()) == {seller, other_seller}
+    assert "Contactul a fost atribuit lui ion și vilma." in response.content.decode()
+    client.force_login(other_seller)
+    assert list(client.get(reverse("contacte:list")).context["contact_list"]) == [contact]
+
+
+def test_reassigning_replaces_previous_people(
+    founder_client, founder, seller, other_seller, contact
+):
+    contact.assignees.add(seller)
+
+    founder_client.post(
+        reverse("contacte:assign"), {"contacts": [contact.pk], "assignees": [other_seller.pk]}
+    )
+
+    assert list(contact.assignees.all()) == [other_seller]
+
+
+def test_assign_list_has_only_founders_and_sellers(
+    founder_client, founder, seller, contact, django_user_model
+):
+    django_user_model.objects.create_superuser(username="nati", password="parola-sigura-123")
+    django_user_model.objects.create_user(username="fara-rol")
+    django_user_model.objects.create_user(username="plecat", is_active=False).groups.add(
+        *seller.groups.all()
+    )
+
+    response = founder_client.get(contact.get_absolute_url())
+
+    assert set(response.context["assignable"]) == {founder, seller}
+    page = response.content.decode()
+    assert "Atribuie" in page and "Modifică" not in page
+    assert "Mută și oportunitățile" not in page
+
+
+def test_assigned_contact_shows_change_button(founder_client, seller, contact):
+    contact.assignees.add(seller)
+
+    page = founder_client.get(contact.get_absolute_url()).content.decode()
+
+    assert "Modifică" in page
+
+
+def test_cannot_assign_to_dev_account(founder_client, contact, django_user_model):
+    nati = django_user_model.objects.create_superuser(username="nati", password="parola-123-sigura")
+
+    founder_client.post(
+        reverse("contacte:assign"), {"contacts": [contact.pk], "assignees": [nati.pk]}
+    )
+
+    assert not contact.assignees.exists()
+
+
+def test_founder_unassigns_contact(founder_client, seller, contact):
+    contact.assignees.add(seller)
+
+    founder_client.post(
+        reverse("contacte:update", args=[contact.pk]), {"name": contact.name, "kind": "parinte"}
+    )
+
+    assert not contact.assignees.exists()
+
+
+def test_founder_sets_several_assignees_on_edit(founder_client, seller, other_seller, contact):
+    response = founder_client.post(
+        reverse("contacte:update", args=[contact.pk]),
+        {"name": contact.name, "kind": "parinte", "assignees": [seller.pk, other_seller.pk]},
+    )
+
+    assert response.url == contact.get_absolute_url()
+    assert set(contact.assignees.all()) == {seller, other_seller}
 
 
 def test_assign_without_selection_shows_error(founder_client, seller):
     response = founder_client.post(
-        reverse("contacte:assign"), {"assigned_to": seller.pk}, follow=True
+        reverse("contacte:assign"), {"assignees": [seller.pk]}, follow=True
     )
 
     assert "Selectați cel puțin un contact." in response.content.decode()
 
 
 def test_assign_without_person_changes_nothing(founder_client, seller, contact):
-    contact.assigned_to = seller
-    contact.save()
+    contact.assignees.add(seller)
 
     response = founder_client.post(
-        reverse("contacte:assign"), {"contacts": [contact.pk], "assigned_to": ""}, follow=True
+        reverse("contacte:assign"), {"contacts": [contact.pk]}, follow=True
     )
 
     assert "Alegeți cui atribuiți contactele." in response.content.decode()
-    contact.refresh_from_db()
-    assert contact.assigned_to == seller
+    assert list(contact.assignees.all()) == [seller]
 
 
 def test_seller_cannot_assign_contacts(seller_client, seller, other_seller, contact):
-    contact.assigned_to = seller
-    contact.save()
+    contact.assignees.add(seller)
 
     response = seller_client.post(
-        reverse("contacte:assign"), {"contacts": [contact.pk], "assigned_to": other_seller.pk}
+        reverse("contacte:assign"), {"contacts": [contact.pk], "assignees": [other_seller.pk]}
     )
 
     assert response.status_code == 403
-    contact.refresh_from_db()
-    assert contact.assigned_to == seller
-
-
-def test_changing_assignee_on_edit_moves_open_opportunities(
-    founder_client, founder, seller, contact
-):
-    opportunity = Opportunity.objects.create(contact=contact, owner=founder)
-
-    founder_client.post(
-        reverse("contacte:update", args=[contact.pk]),
-        {"name": contact.name, "kind": "parinte", "assigned_to": seller.pk},
-    )
-
-    opportunity.refresh_from_db()
-    assert opportunity.owner == seller
+    assert list(contact.assignees.all()) == [seller]
 
 
 def test_seller_edit_keeps_assignee(seller_client, seller, contact):
-    contact.assigned_to = seller
-    contact.save()
+    contact.assignees.add(seller)
 
     seller_client.post(
         reverse("contacte:update", args=[contact.pk]),
@@ -217,4 +251,4 @@ def test_seller_edit_keeps_assignee(seller_client, seller, contact):
 
     contact.refresh_from_db()
     assert contact.name == "Ana Pop-Ionescu"
-    assert contact.assigned_to == seller
+    assert list(contact.assignees.all()) == [seller]

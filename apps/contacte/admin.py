@@ -5,6 +5,7 @@ from .models import Contact
 
 @admin.register(Contact)
 class ContactAdmin(admin.ModelAdmin):
-    list_display = ["name", "kind", "phone", "email", "assigned_to", "created_at"]
-    list_filter = ["kind", "assigned_to"]
+    list_display = ["name", "kind", "phone", "email", "created_at"]
+    list_filter = ["kind", "assignees"]
     search_fields = ["name", "phone", "email"]
+    filter_horizontal = ["assignees"]

@@ -30,7 +30,7 @@ _SELLER_PERMISSIONS = [
 ]
 
 ROLES = {
-    # Sees every contact and opportunity, assigns contacts to sellers and can delete;
+    # Sees every contact and opportunity, assigns contacts to people and can delete;
     # cannot manage users (no admin access).
     FOUNDER: [
         *_SELLER_PERMISSIONS,
@@ -54,6 +54,16 @@ def team_members():
         get_user_model()
         .objects.filter(is_active=True)
         .filter(Q(is_superuser=True) | Q(groups__isnull=False))
+        .distinct()
+        .order_by("first_name", "username")
+    )
+
+
+def sellers_and_founders():
+    """Active founders and sellers, without dev accounts: the people who work contacts."""
+    return (
+        get_user_model()
+        .objects.filter(is_active=True, is_superuser=False, groups__name__in=[FOUNDER, SELLER])
         .distinct()
         .order_by("first_name", "username")
     )

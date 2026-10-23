@@ -43,25 +43,19 @@
   </form>
 
   {% if contact_list %}
-    {% if assign_form %}<form method="post" action="{% url 'contacte:assign' %}" novalidate data-loading-text="Se atribuie…">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% endif %}
+    {% if assignable %}<form method="post" action="{% url 'contacte:assign' %}" novalidate data-loading-text="Se atribuie…">{% csrf_token %}<input type="hidden" name="next" value="{{ request.get_full_path }}">{% endif %}
     <div class="card">
-      {% if assign_form %}
+      {% if assignable %}
         <div class="bulk-bar">
           <span class="bulk-count" data-check-count="contacts" data-label-none="Bifați contactele de atribuit" data-label-one="1 contact selectat" data-label-many="{n} {de}contacte selectate">Bifați contactele de atribuit</span>
-          <label class="visually-hidden" for="{{ assign_form.assigned_to.id_for_label }}">{{ assign_form.assigned_to.label }}</label>
-          {{ assign_form.assigned_to }}
-          <div class="form-check mb-0">
-            {{ assign_form.move_opportunities }}
-            <label class="form-check-label" for="{{ assign_form.move_opportunities.id_for_label }}">Mută și oportunitățile deschise</label>
-          </div>
-          <button type="submit" class="btn btn-primary btn-sm"><i class="bi bi-person-check me-1" aria-hidden="true"></i>Atribuie</button>
+          {% include "components/assignee_picker.html" with people=assignable label="Atribuie" align_end=True %}
         </div>
       {% endif %}
       <div class="table-responsive">
         <table class="table table-hover align-middle mb-0">
           <thead>
             <tr>
-              {% if assign_form %}
+              {% if assignable %}
                 <th scope="col" class="col-check"><input class="form-check-input" type="checkbox" data-check-all="contacts" aria-label="Selectează toate contactele de pe pagină"></th>
               {% endif %}
               <th scope="col">Nume</th>
@@ -74,7 +68,7 @@
           <tbody>
             {% for contact in contact_list %}
               <tr>
-                {% if assign_form %}
+                {% if assignable %}
                   <td class="col-check"><input class="form-check-input" type="checkbox" name="contacts" value="{{ contact.pk }}" aria-label="Selectează {{ contact.name }}"></td>
                 {% endif %}
                 <td><a class="fw-semibold row-link" href="{{ contact.get_absolute_url }}">{{ contact.name }}</a></td>
@@ -82,7 +76,7 @@
                 <td class="text-nowrap">{% if contact.phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% else %}<span class="text-body-secondary">—</span>{% endif %}</td>
                 <td class="d-none d-md-table-cell text-truncate">{{ contact.email|default:"—" }}</td>
                 {% if can_see_all %}
-                  <td class="d-none d-sm-table-cell">{% if contact.assigned_to %}{{ contact.assigned_to|display_name }}{% else %}<span class="badge rounded-pill status-badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Neatribuit</span>{% endif %}</td>
+                  <td class="d-none d-sm-table-cell">{% if contact.assignees.all %}{{ contact.assignees.all|display_names }}{% else %}<span class="badge rounded-pill status-badge bg-warning-subtle text-warning-emphasis border border-warning-subtle">Neatribuit</span>{% endif %}</td>
                 {% endif %}
               </tr>
             {% endfor %}
@@ -90,7 +84,7 @@
         </table>
       </div>
     </div>
-    {% if assign_form %}</form>{% endif %}
+    {% if assignable %}</form>{% endif %}
     {% include "components/pagination.html" %}
   {% elif query or kind or assignee %}
     {% include "components/empty_state.html" with icon="bi-search" text="Niciun contact nu corespunde căutării." %}

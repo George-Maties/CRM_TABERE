@@ -7,7 +7,7 @@ from django.urls import reverse_lazy
 from django.views import View
 from django.views.generic import CreateView, DeleteView, DetailView, ListView, UpdateView
 
-from apps.accounts.roles import team_members
+from apps.accounts.roles import sellers_and_founders
 from apps.oportunitati.models import Opportunity
 
 from .forms import AssignForm, ContactForm
@@ -17,11 +17,16 @@ from .models import Contact
 UNASSIGNED = "nimeni"
 
 
+def assignable_people():
+    """The people listed by the "Atribuie" button, with their roles loaded for the labels."""
+    return sellers_and_founders().prefetch_related("groups")
+
+
 class VisibleContactMixin:
     """Limit every view to the contacts the user may see; others answer 404."""
 
     def get_queryset(self):
-        return Contact.objects.visible_to(self.request.user).select_related("assigned_to")
+        return Contact.objects.visible_to(self.request.user).prefetch_related("assignees")
 
 
 class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
@@ -43,9 +48,9 @@ class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
         if self.kind in Contact.Kind.values:
             contacts = contacts.filter(kind=self.kind)
         if self.assignee == UNASSIGNED:
-            contacts = contacts.filter(assigned_to__isnull=True)
+            contacts = contacts.filter(assignees__isnull=True)
         elif self.assignee.isdigit():
-            contacts = contacts.filter(assigned_to=self.assignee)
+            contacts = contacts.filter(assignees=self.assignee)
         return contacts
 
     def get_context_data(self, **kwargs):
@@ -59,9 +64,9 @@ class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
             "can_see_all": user.has_perm("contacte.view_all_contacts"),
         }
         if context["can_see_all"]:
-            context["team"] = team_members()
+            context["team"] = sellers_and_founders()
         if user.has_perm("contacte.assign_contact"):
-            context["assign_form"] = AssignForm()
+            context["assignable"] = assignable_people()
         context.update(kwargs)
         return super().get_context_data(**context)
 
@@ -79,9 +84,7 @@ class ContactDetailView(PermissionRequiredMixin, VisibleContactMixin, DetailView
         )
         context = {"opportunities": opportunities}
         if self.request.user.has_perm("contacte.assign_contact"):
-            context["assign_form"] = AssignForm(
-                initial={"contacts": [self.object], "assigned_to": self.object.assigned_to}
-            )
+            context["assignable"] = assignable_people()
         context.update(kwargs)
         return super().get_context_data(**context)
 
@@ -101,9 +104,10 @@ class ContactCreateView(PermissionRequiredMixin, ContactFormMixin, SuccessMessag
 
     def form_valid(self, form):
         form.instance.created_by = self.request.user
-        if "assigned_to" not in form.fields:
-            form.instance.assigned_to = self.request.user
-        return super().form_valid(form)
+        response = super().form_valid(form)
+        if "assignees" not in form.fields:
+            self.object.assignees.add(self.request.user)
+        return response
 
 
 class ContactUpdateView(
@@ -111,13 +115,6 @@ class ContactUpdateView(
 ):
     permission_required = "contacte.change_contact"
     success_message = "Modificările au fost salvate."
-
-    def form_valid(self, form):
-        response = super().form_valid(form)
-        if "assigned_to" in form.changed_data and self.object.assigned_to:
-            # Same as the assignment card: open opportunities follow the contact.
-            Contact.objects.filter(pk=self.object.pk).assign(self.object.assigned_to)
-        return response
 
 
 class ContactDeleteView(
@@ -139,7 +136,7 @@ class ContactAssignView(PermissionRequiredMixin, View):
         form = AssignForm(request.POST)
         if form.is_valid():
             messages.success(
-                request, self.success_text(form.save(), form.cleaned_data["assigned_to"])
+                request, self.success_text(form.save(), form.cleaned_data["assignees"])
             )
         else:
             for errors in form.errors.values():
@@ -150,8 +147,9 @@ class ContactAssignView(PermissionRequiredMixin, View):
         return redirect("contacte:list")
 
     @staticmethod
-    def success_text(count, assignee):
-        name = assignee.get_full_name() or assignee.get_username()
+    def success_text(count, assignees):
+        names = [person.get_full_name() or person.get_username() for person in assignees]
+        name = " și ".join([", ".join(names[:-1]), names[-1]]) if len(names) > 1 else names[0]
         if count == 1:
             return f"Contactul a fost atribuit lui {name}."
         # Romanian puts "de" between the number and the noun from 20 up ("20 de contacte").

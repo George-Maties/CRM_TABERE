@@ -10,20 +10,21 @@ class ContactQuerySet(models.QuerySet):
         user, plus those of their own opportunities (so an opportunity never links to a 404)."""
         if user.has_perm("contacte.view_all_contacts"):
             return self
-        with_my_opportunities = self.model.objects.filter(opportunities__owner=user).values("pk")
-        return self.filter(Q(assigned_to=user) | Q(pk__in=with_my_opportunities))
+        mine = self.model.objects.filter(Q(assignees=user) | Q(opportunities__owner=user))
+        return self.filter(pk__in=mine.values("pk"))
 
-    def assign(self, user, move_open_opportunities=True):
-        """Give these contacts to `user`. Their open opportunities can follow,
-        so the new seller sees and continues them. Returns how many contacts were assigned."""
-        # Imported here: opportunities depend on contacts, not the other way round.
-        from apps.oportunitati.models import OPEN_STATUSES, Opportunity
-
-        if move_open_opportunities:
-            Opportunity.objects.filter(contact__in=self, status__in=OPEN_STATUSES).update(
-                owner=user
-            )
-        return self.update(assigned_to=user)
+    def assign(self, users):
+        """Make `users` the people who work these contacts, in place of whoever did.
+        Returns how many contacts were assigned."""
+        through = self.model.assignees.through
+        contact_ids = list(self.values_list("pk", flat=True))
+        through.objects.filter(contact_id__in=contact_ids).delete()
+        through.objects.bulk_create(
+            through(contact_id=contact_id, user_id=user.pk)
+            for contact_id in contact_ids
+            for user in users
+        )
+        return len(contact_ids)
 
 
 class Contact(models.Model):
@@ -39,11 +40,9 @@ class Contact(models.Model):
     phone = models.CharField("telefon", max_length=30, blank=True)
     email = models.EmailField("email", blank=True)
     notes = models.TextField("observații", blank=True)
-    # The seller who works this contact; sellers see only the contacts assigned to them.
-    assigned_to = models.ForeignKey(
+    # Who works this contact, usually one seller; sellers see only the contacts assigned to them.
+    assignees = models.ManyToManyField(
         settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
         blank=True,
         related_name="assigned_contacts",
         verbose_name="atribuit lui",

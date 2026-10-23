@@ -97,8 +97,7 @@ def test_camp_page_hides_contacts_the_seller_cannot_see(
     seller_client, other_seller, contact, make_opportunity
 ):
     camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
-    contact.assigned_to = other_seller
-    contact.save()
+    contact.assignees.add(other_seller)
     make_opportunity(other_seller, status=Status.WON, camp=camp)
 
     html = seller_client.get(camp.get_absolute_url()).content.decode()

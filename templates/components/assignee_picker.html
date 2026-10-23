@@ -1,0 +1,33 @@
+{% comment %}
+  Usage, inside a POST form to contacte:assign:
+    {% include "components/assignee_picker.html" with people=assignable selected=contact.assignees.all label="Atribuie" %}
+  A button that opens the list of founders and sellers; tick one or more and save.
+  Optional: selected (people ticked from the start), align_end=True (menu opens to the left),
+  primary=True (highlighted button).
+{% endcomment %}
+{% load ui %}
+<div class="dropdown assignee-picker">
+  <button class="btn btn-sm {% if primary %}btn-primary{% else %}btn-outline-secondary{% endif %} dropdown-toggle" type="button"
+          data-bs-toggle="dropdown" data-bs-auto-close="outside" aria-expanded="false">
+    <i class="bi bi-person-plus me-1" aria-hidden="true"></i>{{ label }}
+  </button>
+  <div class="dropdown-menu{% if align_end %} dropdown-menu-end{% endif %} assignee-menu">
+    <fieldset>
+      <legend class="assignee-menu-title">Atribuie lui</legend>
+      {% for person in people %}
+        <label class="assignee-option">
+          <input class="form-check-input" type="checkbox" name="assignees" value="{{ person.pk }}"{% if person in selected %} checked{% endif %}>
+          <span class="assignee-name">{{ person|display_name }}</span>
+          <span class="assignee-role">{{ person|role }}</span>
+        </label>
+      {% empty %}
+        <p class="text-body-secondary small mb-0">Nu există încă fondatori sau vânzători activi.</p>
+      {% endfor %}
+    </fieldset>
+    {% if people %}
+      <button type="submit" class="btn btn-primary btn-sm w-100 mt-2">
+        <i class="bi bi-person-check me-1" aria-hidden="true"></i>Salvează
+      </button>
+    {% endif %}
+  </div>
+</div>

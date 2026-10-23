@@ -232,9 +232,8 @@ class Command(BaseCommand):
             opportunities.append(opportunity)
             # A contact belongs to the seller of its first opportunity; the rest stay unassigned.
             contact = opportunity.contact
-            if contact.assigned_to_id is None:
-                Contact.objects.filter(pk=contact.pk).update(assigned_to=opportunity.owner)
-                contact.assigned_to = opportunity.owner
+            if not contact.assignees.exists():
+                contact.assignees.add(opportunity.owner)
 
         for camp_key, title, assignee, creator, due_in, done in TASKS:
             Task.objects.create(

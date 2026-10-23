@@ -102,10 +102,9 @@ class OpportunityCreateView(PermissionRequiredMixin, CreateView):
             form.instance.owner = self.request.user
         response = super().form_valid(form)
         contact = self.object.contact
-        if contact.assigned_to_id is None:
+        if not contact.assignees.exists():
             # Whoever works the opportunity works the contact, until a founder decides otherwise.
-            contact.assigned_to = self.object.owner
-            contact.save(update_fields=["assigned_to", "updated_at"])
+            contact.assignees.add(self.object.owner)
         if form.cleaned_data["note"]:
             self.object.notes.create(author=self.request.user, text=form.cleaned_data["note"])
         messages.success(self.request, "Oportunitatea a fost creată.")

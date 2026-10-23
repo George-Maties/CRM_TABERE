@@ -1,5 +1,7 @@
 from django import template
 
+from apps.accounts.roles import role_label
+
 register = template.Library()
 
 
@@ -9,6 +11,21 @@ def display_name(user):
     if user is None:
         return "—"
     return user.get_full_name() or user.get_username()
+
+
+@register.filter
+def display_names(users):
+    """Names joined the Romanian way: "Ana", "Ana și Ion", "Ana, Ion și Vlad"."""
+    names = [display_name(user) for user in users]
+    if len(names) > 1:
+        return f"{', '.join(names[:-1])} și {names[-1]}"
+    return names[0] if names else ""
+
+
+@register.filter
+def role(user):
+    """The user's role, as shown in the interface ("Fondator", "Vânzător")."""
+    return role_label(user)
 
 
 @register.filter
