@@ -2,7 +2,8 @@
 {% comment %}
   Usage: {% include "components/task_item.html" with task=task can_toggle=perms.tabere.change_task %}
   One task (of a camp or of an opportunity) with its done/undone button, shown when can_toggle.
-  show_parent=True adds a link to its camp or opportunity instead of the assignee (Wall).
+  show_parent=True adds a link to its camp or opportunity instead of the assignee;
+  hide_assignee=True leaves the assignee out (tasks already grouped under their parent).
 {% endcomment %}
 <li class="task{% if task.done %} task-done{% endif %}">
   {% if can_toggle %}
@@ -20,7 +21,7 @@
     <div class="item-meta">
       {% if show_parent %}
         <a href="{{ task.parent_url }}"><i class="bi {{ task.parent_icon }}" aria-hidden="true"></i> {{ task.parent_label }}</a>
-      {% else %}
+      {% elif not hide_assignee %}
         <span><i class="bi bi-person" aria-hidden="true"></i> {{ task.assigned_to|display_name }}</span>
       {% endif %}
       {% if task.due_date %}

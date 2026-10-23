@@ -13,11 +13,7 @@
         <div class="card-body">
           <h2 class="card-title-sm">Sarcini tabere <span class="count-pill">{{ camp_tasks|length }}</span></h2>
           {% if camp_tasks %}
-            <ul class="task-list">
-              {% for task in camp_tasks %}
-                {% include "components/task_item.html" with task=task can_toggle=perms.tabere.change_task show_parent=True %}
-              {% endfor %}
-            </ul>
+            {% include "components/task_groups.html" with groups=camp_task_groups can_toggle=perms.tabere.change_task %}
           {% else %}
             {% include "components/empty_state.html" with icon="bi-backpack" text="Nicio sarcină deschisă la tabere." %}
           {% endif %}
@@ -30,11 +26,7 @@
         <div class="card-body">
           <h2 class="card-title-sm">Sarcini oportunități <span class="count-pill">{{ opportunity_tasks|length }}</span></h2>
           {% if opportunity_tasks %}
-            <ul class="task-list">
-              {% for task in opportunity_tasks %}
-                {% include "components/task_item.html" with task=task can_toggle=perms.oportunitati.change_task show_parent=True %}
-              {% endfor %}
-            </ul>
+            {% include "components/task_groups.html" with groups=opportunity_task_groups can_toggle=perms.oportunitati.change_task %}
           {% else %}
             {% include "components/empty_state.html" with icon="bi-briefcase" text="Nicio sarcină deschisă la oportunități." %}
           {% endif %}

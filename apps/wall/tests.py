@@ -78,3 +78,31 @@ def test_wall_has_three_columns_camp_tasks_opportunity_tasks_activity(
     assert page.index("Sarcini tabere") < page.index("Sarcini oportunități")
     assert page.index("Sarcini oportunități") < page.index("Activitate recentă")
     assert f'href="{opportunity.get_absolute_url()}#sarcini"' in page
+
+
+def test_wall_groups_tasks_by_camp_and_opportunity(
+    seller_client, seller, contact, make_opportunity
+):
+    soon, later = timezone.localdate(), timezone.localdate() + timedelta(days=5)
+    summer = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    winter = Camp.objects.create(name="Iarnă 2027", start_date="2027-02-10")
+    Task.objects.create(camp=summer, title="Cazare", assigned_to=seller, due_date=later)
+    Task.objects.create(camp=winter, title="Instructori", assigned_to=seller, due_date=soon)
+    Task.objects.create(camp=summer, title="Autocar", assigned_to=seller)
+    opportunity = make_opportunity(seller)
+    OpportunityTask.objects.create(opportunity=opportunity, title="Ofertă", assigned_to=seller)
+    OpportunityTask.objects.create(opportunity=opportunity, title="Sună", assigned_to=seller)
+
+    response = seller_client.get(reverse("wall:index"))
+
+    camps = [
+        (group["label"], [task.title for task in group["tasks"]])
+        for group in response.context["camp_task_groups"]
+    ]
+    # The camp with the most urgent task first; without a deadline comes last.
+    assert camps == [("Iarnă 2027", ["Instructori"]), ("Vară 2027", ["Cazare", "Autocar"])]
+    [group] = response.context["opportunity_task_groups"]
+    assert group["label"] == "Ana Pop" and len(group["tasks"]) == 2
+    page = response.content.decode()
+    assert page.count('class="task-group"') == 3
+    assert page.count('class="task-group-count"') == 2

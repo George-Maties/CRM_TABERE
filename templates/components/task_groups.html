@@ -1,0 +1,19 @@
+{% comment %}
+  Usage: {% include "components/task_groups.html" with groups=camp_task_groups can_toggle=perms.tabere.change_task %}
+  Tasks grouped by their camp or opportunity: a link to it, then its tasks one under the other
+  (groups made by group_by_parent in apps/wall/views.py).
+{% endcomment %}
+{% for group in groups %}
+  <section class="task-group" aria-label="{{ group.label }}">
+    <div class="task-group-title">
+      <i class="bi {{ group.icon }}" aria-hidden="true"></i>
+      <a href="{{ group.url }}">{{ group.label }}</a>
+      {% if group.tasks|length > 1 %}<span class="task-group-count">{{ group.tasks|length }}</span>{% endif %}
+    </div>
+    <ul class="task-list">
+      {% for task in group.tasks %}
+        {% include "components/task_item.html" with task=task can_toggle=can_toggle hide_assignee=True %}
+      {% endfor %}
+    </ul>
+  </section>
+{% endfor %}

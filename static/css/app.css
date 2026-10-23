@@ -1159,6 +1159,52 @@ body {
   text-decoration: line-through;
 }
 
+/* Tasks of one camp or opportunity, under a link to it (Wall) */
+.task-group + .task-group {
+  margin-top: 1.25rem;
+}
+
+.task-group-title {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.875rem;
+  font-weight: 600;
+}
+
+.task-group-title .bi {
+  flex-shrink: 0;
+  color: var(--app-brand);
+}
+
+.task-group-title a {
+  min-width: 0;
+  overflow: hidden;
+  color: var(--app-ink);
+  text-decoration: none;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.task-group-title a:hover {
+  color: var(--app-accent);
+  text-decoration: underline;
+}
+
+.task-group-count {
+  margin-left: auto;
+  font-size: 0.8125rem;
+  font-weight: 500;
+  color: var(--app-muted);
+}
+
+.task-group .task-list {
+  padding-left: 0.75rem;
+  margin: 0 0 0 0.4375rem;
+  border-left: 2px solid var(--app-border);
+}
+
 .task-add summary {
   list-style: none;
 }
