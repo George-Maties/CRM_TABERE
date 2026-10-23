@@ -4,7 +4,7 @@ from django.urls import reverse
 
 from apps.core.navigation import MenuItem, sidebar_items
 
-SECTIONS = ["wall:welcome", "oportunitati:welcome", "contacte:welcome"]
+SECTIONS = ["wall:index", "oportunitati:list", "contacte:list"]
 
 
 @pytest.mark.django_db
@@ -38,7 +38,7 @@ def test_section_renders_with_sidebar(admin_client, url_name):
 
 @pytest.mark.django_db
 def test_sidebar_hides_items_without_permission(rf, django_user_model, monkeypatch):
-    secret = MenuItem(label="Secret", url_name="wall:welcome", icon="bi-lock", permission="x.y")
+    secret = MenuItem(label="Secret", url_name="wall:index", icon="bi-lock", permission="x.y")
     monkeypatch.setattr(apps.get_app_config("wall"), "menu_items", (secret,))
     request = rf.get("/")
     request.user = django_user_model.objects.create_user(username="ana")
@@ -46,4 +46,18 @@ def test_sidebar_hides_items_without_permission(rf, django_user_model, monkeypat
     labels = [item["label"] for item in sidebar_items(request)]
 
     assert "Secret" not in labels
-    assert "Contacte" in labels
+
+
+@pytest.mark.django_db
+def test_sidebar_by_role(rf, django_user_model, seller):
+    request = rf.get("/")
+
+    request.user = seller
+    assert [item["label"] for item in sidebar_items(request)] == [
+        "Wall",
+        "Oportunități",
+        "Contacte",
+    ]
+
+    request.user = django_user_model.objects.create_user(username="fara-rol")
+    assert [item["label"] for item in sidebar_items(request)] == ["Wall"]

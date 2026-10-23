@@ -1,0 +1,36 @@
+{% load ui %}
+{% comment %}
+  Usage: {% include "components/task_item.html" with task=task show_opportunity=True %}
+  One task with its done/undone button. show_opportunity adds a link to its opportunity (Wall).
+{% endcomment %}
+<li class="task{% if task.done %} task-done{% endif %}">
+  {% if perms.oportunitati.change_task %}
+    <form method="post" action="{% url 'oportunitati:task-toggle' task.pk %}">
+      {% csrf_token %}
+      <input type="hidden" name="next" value="{{ request.get_full_path }}">
+      <button class="task-check" type="submit" aria-pressed="{{ task.done|yesno:'true,false' }}"
+              aria-label="{% if task.done %}Marchează ca nefăcută{% else %}Marchează ca gata{% endif %}: {{ task.title }}">
+        <i class="bi {% if task.done %}bi-check-circle-fill{% else %}bi-circle{% endif %}" aria-hidden="true"></i>
+      </button>
+    </form>
+  {% endif %}
+  <div class="task-body">
+    <div class="task-title">{{ task.title }}</div>
+    <div class="item-meta">
+      {% if show_opportunity %}
+        <a href="{{ task.opportunity.get_absolute_url }}#sarcini">{{ task.opportunity.contact.name }} · {{ task.opportunity.title }}</a>
+      {% else %}
+        <span><i class="bi bi-person" aria-hidden="true"></i> {{ task.assigned_to|display_name }}</span>
+      {% endif %}
+      {% if task.due_date %}
+        <span class="{% if task.is_overdue %}text-danger fw-semibold{% endif %}">
+          <i class="bi bi-calendar-event" aria-hidden="true"></i>
+          {{ task.due_date|date:"j M"|lower }}{% if task.is_overdue %} · întârziată{% endif %}
+        </span>
+      {% endif %}
+      {% if task.created_by and task.created_by != task.assigned_to %}
+        <span>de la {{ task.created_by|display_name }}</span>
+      {% endif %}
+    </div>
+  </div>
+</li>

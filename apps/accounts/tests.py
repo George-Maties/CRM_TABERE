@@ -18,7 +18,7 @@ def test_login_redirects_to_home(client, django_user_model):
     )
 
     assert response.status_code == 302
-    assert response.url == reverse("wall:welcome")
+    assert response.url == reverse("wall:index")
 
 
 @pytest.mark.django_db

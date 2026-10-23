@@ -1,0 +1,21 @@
+{% extends "layouts/app.html" %}
+{% comment %}
+  A page with a header: title (the page's <h1>) on the left, actions on the right.
+  Pages extend this and fill:
+    {% block title %}          text for the browser tab
+    {% block page_title %}     the visible heading
+    {% block page_subtitle %}  optional line under the heading
+    {% block page_actions %}   optional buttons
+    {% block page_content %}   the page itself
+{% endcomment %}
+
+{% block content %}
+  <div class="page-header">
+    <div class="page-header-text">
+      <h1>{% block page_title %}{% endblock %}</h1>
+      {% block page_subtitle %}{% endblock %}
+    </div>
+    <div class="page-header-actions">{% block page_actions %}{% endblock %}</div>
+  </div>
+  {% block page_content %}{% endblock %}
+{% endblock %}

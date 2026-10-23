@@ -1,0 +1,120 @@
+{% extends "layouts/page.html" %}
+{% load humanize ui opportunity_tags %}
+
+{% block title %}{{ opportunity.title }}{% endblock %}
+{% block page_title %}{{ opportunity.title }}{% endblock %}
+{% block page_subtitle %}
+  <p class="page-subtitle">
+    {% status_badge opportunity %}
+    <a href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a>
+    {% if opportunity.contact.phone %}· <a href="tel:{{ opportunity.contact.phone }}">{{ opportunity.contact.phone }}</a>{% endif %}
+  </p>
+{% endblock %}
+
+{% block page_actions %}
+  {% if perms.oportunitati.change_opportunity %}
+    <a class="btn btn-outline-secondary" href="{% url 'oportunitati:update' opportunity.pk %}">
+      <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editează
+    </a>
+  {% endif %}
+  {% if perms.oportunitati.delete_opportunity %}
+    <a class="btn btn-outline-secondary" href="{% url 'oportunitati:delete' opportunity.pk %}" aria-label="Șterge oportunitatea" title="Șterge">
+      <i class="bi bi-trash" aria-hidden="true"></i>
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block page_content %}
+  <div class="row g-4">
+    <div class="col-lg-7 order-2 order-lg-1">
+      <section class="card" id="istoric">
+        <div class="card-body">
+          <h2 class="card-title-sm">Istoric</h2>
+          {% if perms.oportunitati.add_note %}
+            <form class="note-form" method="post" action="{% url 'oportunitati:note' opportunity.pk %}" novalidate data-loading-text="Se salvează…">
+              {% csrf_token %}
+              {% include "components/form_field.html" with field=note_form.text %}
+              <button type="submit" class="btn btn-primary btn-sm">Adaugă nota</button>
+            </form>
+          {% endif %}
+          {% if notes %}
+            <ol class="timeline">
+              {% for note in notes %}
+                <li class="timeline-item{% if note.is_status_change %} timeline-status{% endif %}">
+                  <span class="user-avatar user-avatar-sm" aria-hidden="true">{{ note.author|initials }}</span>
+                  <div class="timeline-body">
+                    <div class="timeline-meta">
+                      <strong>{{ note.author|display_name }}</strong>
+                      {% if note.is_status_change %}a schimbat statusul{% endif %}
+                      <time datetime="{{ note.created_at|date:'c' }}" title="{{ note.created_at|date:'j F Y, H:i'|lower }}">{{ note.created_at|naturaltime }}</time>
+                    </div>
+                    <div class="{% if note.is_status_change %}fw-medium{% else %}text-prewrap{% endif %}">{{ note.text }}</div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p class="text-body-secondary mb-0 mt-3">Nicio notă încă. Scrieți aici ce ați discutat.</p>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-5 order-1 order-lg-2 d-flex flex-column gap-4">
+      {% if perms.oportunitati.change_opportunity %}
+        <section class="card">
+          <div class="card-body">
+            <h2 class="card-title-sm">Status</h2>
+            <form class="d-flex gap-2" method="post" action="{% url 'oportunitati:status' opportunity.pk %}">
+              {% csrf_token %}
+              <label class="visually-hidden" for="{{ status_form.status.id_for_label }}">Status</label>
+              {{ status_form.status }}
+              <button type="submit" class="btn btn-outline-primary text-nowrap">Schimbă</button>
+            </form>
+          </div>
+        </section>
+      {% endif %}
+
+      <section class="card" id="sarcini">
+        <div class="card-body">
+          <h2 class="card-title-sm">Sarcini</h2>
+          {% if tasks %}
+            <ul class="task-list">
+              {% for task in tasks %}
+                {% include "components/task_item.html" with task=task %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-body-secondary">Nicio sarcină.</p>
+          {% endif %}
+          {% if perms.oportunitati.add_task %}
+            <details class="task-add"{% if task_form.errors %} open{% endif %}>
+              <summary class="btn btn-outline-secondary btn-sm"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adaugă sarcină</summary>
+              <form method="post" action="{% url 'oportunitati:task' opportunity.pk %}" novalidate class="mt-3" data-loading-text="Se salvează…">
+                {% csrf_token %}
+                {% include "components/form_field.html" with field=task_form.title %}
+                <div class="row">
+                  <div class="col-sm-7">{% include "components/form_field.html" with field=task_form.assigned_to %}</div>
+                  <div class="col-sm-5">{% include "components/form_field.html" with field=task_form.due_date %}</div>
+                </div>
+                <button type="submit" class="btn btn-primary btn-sm">Salvează sarcina</button>
+              </form>
+            </details>
+          {% endif %}
+        </div>
+      </section>
+
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title-sm">Detalii</h2>
+          <dl class="detail-list">
+            <dt>Responsabil</dt>
+            <dd>{{ opportunity.owner|display_name }}</dd>
+            <dt>Creată</dt>
+            <dd>{{ opportunity.created_at|date:"j F Y"|lower }}{% if opportunity.created_by %} de {{ opportunity.created_by|display_name }}{% endif %}</dd>
+          </dl>
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}

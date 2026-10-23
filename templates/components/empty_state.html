@@ -1,0 +1,11 @@
+{% comment %}
+  Usage: {% include "components/empty_state.html" with icon="bi-people" text="Nu există încă niciun contact." action_url=url action_label="Adaugă contact" %}
+  Required: icon, text. Optional: action_url + action_label (button shown only with both).
+{% endcomment %}
+<div class="empty-state">
+  <i class="bi {{ icon }}" aria-hidden="true"></i>
+  <p>{{ text }}</p>
+  {% if action_url and action_label %}
+    <a class="btn btn-primary btn-sm" href="{{ action_url }}"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>{{ action_label }}</a>
+  {% endif %}
+</div>

@@ -22,6 +22,7 @@ INSTALLED_APPS = [
     "django.contrib.sessions",
     "django.contrib.messages",
     "django.contrib.staticfiles",
+    "django.contrib.humanize",
     "apps.accounts",
     "apps.core",
     # Sidebar order comes from each app's MenuItem.order, not from this list.
@@ -79,7 +80,7 @@ DATABASES = {
 AUTH_USER_MODEL = "accounts.User"
 
 LOGIN_URL = "accounts:login"
-LOGIN_REDIRECT_URL = "wall:welcome"  # also the target of the navbar logo
+LOGIN_REDIRECT_URL = "wall:index"  # also the target of the navbar logo
 LOGOUT_REDIRECT_URL = "accounts:login"
 
 # Bootstrap calls the error alert "danger".

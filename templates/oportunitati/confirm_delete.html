@@ -1,0 +1,17 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}Șterge oportunitatea{% endblock %}
+{% block page_title %}Ștergeți oportunitatea?{% endblock %}
+
+{% block page_content %}
+  <form class="card form-card" method="post">
+    <div class="card-body">
+      {% csrf_token %}
+      <p>Oportunitatea <strong>{{ object.title }}</strong> ({{ object.contact.name }}) va fi ștearsă definitiv, cu toate notele și sarcinile ei.</p>
+      <div class="form-actions">
+        <button type="submit" class="btn btn-danger">Da, șterge oportunitatea</button>
+        <a class="btn btn-link" href="{{ object.get_absolute_url }}">Renunță</a>
+      </div>
+    </div>
+  </form>
+{% endblock %}

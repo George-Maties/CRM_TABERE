@@ -9,6 +9,10 @@ class OportunitatiConfig(AppConfig):
     verbose_name = "Oportunități"
     menu_items = (
         MenuItem(
-            label="Oportunități", url_name="oportunitati:welcome", icon="bi-briefcase", order=20
+            label="Oportunități",
+            url_name="oportunitati:list",
+            icon="bi-briefcase",
+            order=20,
+            permission="oportunitati.view_opportunity",
         ),
     )

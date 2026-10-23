@@ -58,6 +58,13 @@
     });
   });
 
+  // [data-auto-submit]: submit the form as soon as the control changes (filters)
+  document.querySelectorAll("[data-auto-submit]").forEach(function (control) {
+    control.addEventListener("change", function () {
+      control.form.requestSubmit();
+    });
+  });
+
   // form[data-loading-text]: show progress on the submit button once the request starts
   document.querySelectorAll("form[data-loading-text]").forEach(function (form) {
     var button = form.querySelector('[type="submit"]');

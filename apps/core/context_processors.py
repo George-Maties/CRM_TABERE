@@ -1,6 +1,8 @@
 from django.conf import settings
 from django.shortcuts import resolve_url
 
+from apps.accounts.roles import role_label
+
 from .navigation import sidebar_items
 
 
@@ -13,4 +15,5 @@ def layout(request):
     user = getattr(request, "user", None)
     if user is not None and user.is_authenticated:
         context["sidebar_items"] = sidebar_items(request)
+        context["role_label"] = role_label(user)
     return context

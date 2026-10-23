@@ -1,0 +1,82 @@
+{% extends "layouts/page.html" %}
+{% load ui opportunity_tags %}
+
+{% block title %}Oportunități{% endblock %}
+{% block page_title %}Oportunități{% endblock %}
+{% block page_subtitle %}
+  {% if not can_see_all %}<p class="page-subtitle">Oportunitățile de care vă ocupați.</p>{% endif %}
+{% endblock %}
+
+{% block page_actions %}
+  {% if perms.oportunitati.add_opportunity %}
+    <a class="btn btn-primary" href="{% url 'oportunitati:create' %}">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adaugă oportunitate
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block page_content %}
+  <form class="toolbar" method="get" role="search">
+    {% if status %}<input type="hidden" name="status" value="{{ status }}">{% endif %}
+    <div class="toolbar-search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="visually-hidden" for="cauta">Caută</label>
+      <input class="form-control" type="search" id="cauta" name="q" value="{{ query }}"
+             placeholder="Caută după titlu sau contact…" autocomplete="off">
+    </div>
+    {% if can_see_all %}
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="ale-mele" name="ale_mele" value="1"{% if mine %} checked{% endif %} data-auto-submit>
+        <label class="form-check-label" for="ale-mele">Doar ale mele</label>
+      </div>
+    {% endif %}
+    <button class="btn btn-outline-secondary" type="submit">Caută</button>
+  </form>
+
+  <nav class="status-tabs" aria-label="Filtrează după status">
+    <a href="{% query_with status=None %}" class="status-tab{% if not status %} active{% endif %}"{% if not status %} aria-current="page"{% endif %}>
+      Toate <span class="status-tab-count">{{ total }}</span>
+    </a>
+    {% for tab in status_tabs %}
+      <a href="{% query_with status=tab.value %}" class="status-tab{% if status == tab.value %} active{% endif %}"{% if status == tab.value %} aria-current="page"{% endif %}>
+        {{ tab.label }} <span class="status-tab-count">{{ tab.count }}</span>
+      </a>
+    {% endfor %}
+  </nav>
+
+  {% if opportunity_list %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Oportunitate</th>
+              <th scope="col">Status</th>
+              <th scope="col" class="d-none d-md-table-cell">Responsabil</th>
+              <th scope="col" class="d-none d-sm-table-cell text-end">Actualizată</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for opportunity in opportunity_list %}
+              <tr>
+                <td>
+                  <a class="fw-semibold row-link" href="{{ opportunity.get_absolute_url }}">{{ opportunity.title }}</a>
+                  <div class="small text-body-secondary">{{ opportunity.contact.name }}</div>
+                </td>
+                <td>{% status_badge opportunity %}</td>
+                <td class="d-none d-md-table-cell">{{ opportunity.owner|display_name }}</td>
+                <td class="d-none d-sm-table-cell text-end text-body-secondary text-nowrap" title="{{ opportunity.updated_at|date:'j F Y, H:i'|lower }}">{{ opportunity.updated_at|date:"j M"|lower }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include "components/pagination.html" %}
+  {% elif query or status or mine %}
+    {% include "components/empty_state.html" with icon="bi-search" text="Nicio oportunitate nu corespunde filtrelor." %}
+  {% else %}
+    {% url 'contacte:list' as contacts_url %}
+    {% include "components/empty_state.html" with icon="bi-briefcase" text="Nu există încă nicio oportunitate. O oportunitate se creează din pagina unui contact." action_url=contacts_url action_label="Mergi la contacte" %}
+  {% endif %}
+{% endblock %}

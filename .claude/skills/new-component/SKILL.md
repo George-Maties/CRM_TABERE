@@ -5,7 +5,7 @@ description: Creează o componentă de interfață refolosibilă în templates/c
 
 # Componentă nouă
 
-Respectă `ui-conventions`. Componentele existente: `templates/components/` (`logo.html`, `messages.html`, `welcome.html`). Verifică întâi să nu existe deja una potrivită.
+Respectă `ui-conventions`. Componentele existente sunt în `templates/components/`: `logo.html`, `messages.html`, `welcome.html`, `form_field.html`, `empty_state.html`, `pagination.html`, `status_badge.html` (prin tag-ul `{% status_badge %}`) și `task_item.html`. Filtrele comune (`display_name`, `initials`, `query_with`) sunt în `apps/core/templatetags/ui.py`. Verifică întâi să nu existe deja una potrivită.
 
 ## 1. Fișierul: `templates/components/<nume>.html`
 

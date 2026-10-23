@@ -1,1 +1,0 @@
-{% comment %}Initials of the logged-in user, e.g. "AP" for Ana Popescu; first letter of the username otherwise.{% endcomment %}{% if user.first_name or user.last_name %}{{ user.first_name|first|upper }}{{ user.last_name|first|upper }}{% else %}{{ user.get_username|first|upper }}{% endif %}

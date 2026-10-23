@@ -9,6 +9,10 @@ class ContacteConfig(AppConfig):
     verbose_name = "Contacte"
     menu_items = (
         MenuItem(
-            label="Contacte", url_name="contacte:welcome", icon="bi-person-lines-fill", order=30
+            label="Contacte",
+            url_name="contacte:list",
+            icon="bi-person-lines-fill",
+            order=30,
+            permission="contacte.view_contact",
         ),
     )

@@ -1,0 +1,23 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}{% if object %}Editează oportunitatea{% else %}Oportunitate nouă{% endif %}{% endblock %}
+{% block page_title %}{% if object %}Editează oportunitatea{% else %}Oportunitate nouă{% endif %}{% endblock %}
+
+{% block page_content %}
+  <form class="card form-card" method="post" novalidate data-loading-text="Se salvează…">
+    <div class="card-body">
+      {% csrf_token %}
+      {% include "components/form_field.html" with field=form.contact %}
+      {% include "components/form_field.html" with field=form.title %}
+      <div class="row">
+        {% if form.status %}<div class="col-sm-6">{% include "components/form_field.html" with field=form.status %}</div>{% endif %}
+        {% if form.owner %}<div class="col-sm-6">{% include "components/form_field.html" with field=form.owner %}</div>{% endif %}
+      </div>
+      {% if form.note %}{% include "components/form_field.html" with field=form.note %}{% endif %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{% if object %}Salvează modificările{% else %}Creează oportunitatea{% endif %}</button>
+        <a class="btn btn-link" href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'oportunitati:list' %}{% endif %}">Renunță</a>
+      </div>
+    </div>
+  </form>
+{% endblock %}

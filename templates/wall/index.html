@@ -1,0 +1,55 @@
+{% extends "layouts/page.html" %}
+{% load humanize ui %}
+
+{% block title %}Wall{% endblock %}
+{% block page_title %}Bună ziua, {{ user.first_name|default:user.get_username }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">{% now "l, j F Y" as today %}{{ today|lower|capfirst }}</p>{% endblock %}
+
+{% block page_content %}
+  <div class="row g-4">
+    <div class="col-lg-7">
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title-sm">Sarcinile mele <span class="count-pill">{{ my_tasks|length }}</span></h2>
+          {% if my_tasks %}
+            <ul class="task-list">
+              {% for task in my_tasks %}
+                {% include "components/task_item.html" with task=task show_opportunity=True %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            {% include "components/empty_state.html" with icon="bi-check2-circle" text="Nicio sarcină deschisă. Sarcinile primite de la colegi apar aici." %}
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-5">
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title-sm">Activitate recentă</h2>
+          {% if activity %}
+            <ol class="timeline timeline-compact">
+              {% for note in activity %}
+                <li class="timeline-item">
+                  <span class="user-avatar user-avatar-sm" aria-hidden="true">{{ note.author|initials }}</span>
+                  <div class="timeline-body">
+                    <div class="timeline-meta">
+                      <strong>{{ note.author|display_name }}</strong>
+                      {% if note.is_status_change %}a schimbat statusul{% else %}a scris o notă{% endif %}
+                      <time datetime="{{ note.created_at|date:'c' }}" title="{{ note.created_at|date:'j F Y, H:i'|lower }}">{{ note.created_at|naturaltime }}</time>
+                    </div>
+                    <a class="d-block text-truncate" href="{{ note.opportunity.get_absolute_url }}#istoric">{{ note.opportunity.contact.name }} · {{ note.opportunity.title }}</a>
+                    <div class="text-body-secondary small text-truncate">{{ note.text }}</div>
+                  </div>
+                </li>
+              {% endfor %}
+            </ol>
+          {% else %}
+            <p class="text-body-secondary mb-0">Nicio activitate încă.</p>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}

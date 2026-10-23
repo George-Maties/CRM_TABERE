@@ -1,0 +1,24 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}Șterge {{ object.name }}{% endblock %}
+{% block page_title %}Ștergeți contactul?{% endblock %}
+
+{% block page_content %}
+  <form class="card form-card" method="post">
+    <div class="card-body">
+      {% csrf_token %}
+      <p>Contactul <strong>{{ object.name }}</strong> va fi șters definitiv.</p>
+      {% with count=object.opportunities.count %}
+        {% if count %}
+          <div class="alert alert-warning">
+            Se vor șterge și oportunitățile acestui contact ({{ count }}), cu toate notele și sarcinile lor.
+          </div>
+        {% endif %}
+      {% endwith %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-danger">Da, șterge contactul</button>
+        <a class="btn btn-link" href="{{ object.get_absolute_url }}">Renunță</a>
+      </div>
+    </div>
+  </form>
+{% endblock %}

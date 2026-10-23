@@ -9,6 +9,7 @@ cd "$APP_DIR"
 git pull --ff-only
 "$VENV/bin/pip" install -r requirements.txt
 "$VENV/bin/python" manage.py migrate --noinput
+"$VENV/bin/python" manage.py setup_roles
 "$VENV/bin/python" manage.py collectstatic --noinput
 "$VENV/bin/python" manage.py check --deploy
 sudo systemctl reload crm-tabere

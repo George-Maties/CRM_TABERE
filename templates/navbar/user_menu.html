@@ -1,14 +1,15 @@
-{% with full_name=user.get_full_name %}
+{% load ui %}{% with full_name=user.get_full_name %}
 <div class="dropdown user-menu">
   <button class="user-menu-toggle" type="button" data-bs-toggle="dropdown" aria-expanded="false"
           aria-label="Contul meu: {{ full_name|default:user.get_username }}">
-    <span class="user-avatar" aria-hidden="true">{% include "components/initials.html" %}</span>
+    <span class="user-avatar" aria-hidden="true">{{ user|initials }}</span>
     <span class="d-none d-sm-inline fw-medium">{{ full_name|default:user.get_username }}</span>
     <i class="bi bi-chevron-down small text-body-secondary" aria-hidden="true"></i>
   </button>
   <ul class="dropdown-menu dropdown-menu-end">
     <li class="user-menu-header">
       <div class="fw-semibold">{{ full_name|default:user.get_username }}</div>
+      <div class="small text-body-secondary">{{ role_label|default:"Fără rol" }}</div>
       {% if user.email %}<div class="small text-body-secondary text-truncate">{{ user.email }}</div>{% endif %}
     </li>
     <li><hr class="dropdown-divider"></li>

@@ -1,9 +1,9 @@
 from django.urls import path
 
-from .views import WelcomeView
+from .views import WallView
 
 app_name = "wall"
 
 urlpatterns = [
-    path("", WelcomeView.as_view(), name="welcome"),
+    path("", WallView.as_view(), name="index"),
 ]

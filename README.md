@@ -39,6 +39,22 @@ python manage.py runserver
 
 Aplicația pornește la http://localhost:8000/admin/. Verificarea stării este la http://localhost:8000/health/.
 
+### Roluri și date de test
+
+```bash
+python manage.py setup_roles          # creează rolurile Fondator și Vânzător (rulat și de deploy.sh)
+python manage.py seed_demo            # 10 contacte de test, cu oportunități, note și sarcini
+python manage.py seed_demo --reset    # le recreează (șterge doar contactele cu email @example.com)
+```
+
+| Rol | Cine | Ce poate |
+|---|---|---|
+| Dev | superuser | tot, inclusiv administrarea utilizatorilor |
+| Fondator | grupul „Fondator” | vede toate oportunitățile, poate șterge; nu gestionează utilizatori |
+| Vânzător | grupul „Vânzător” | vede doar oportunitățile lui sau pe cele unde are o sarcină; nu poate șterge |
+
+Rolurile se atribuie din Administrare → Utilizatori → grupuri. Rolurile noi se creează tot acolo, ca grupuri cu permisiunile bifate. Definițiile rolurilor de bază sunt în `apps/accounts/roles.py`.
+
 ### Comenzi utile
 
 ```bash

@@ -1,0 +1,72 @@
+{% extends "layouts/page.html" %}
+{% load ui opportunity_tags %}
+
+{% block title %}{{ contact.name }}{% endblock %}
+{% block page_title %}{{ contact.name }}{% endblock %}
+{% block page_subtitle %}<p class="page-subtitle">{{ contact.get_kind_display }}</p>{% endblock %}
+
+{% block page_actions %}
+  {% if perms.oportunitati.add_opportunity %}
+    <a class="btn btn-primary" href="{% url 'oportunitati:create' %}?contact={{ contact.pk }}">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Creează oportunitate
+    </a>
+  {% endif %}
+  {% if perms.contacte.change_contact %}
+    <a class="btn btn-outline-secondary" href="{% url 'contacte:update' contact.pk %}">
+      <i class="bi bi-pencil me-1" aria-hidden="true"></i>Editează
+    </a>
+  {% endif %}
+  {% if perms.contacte.delete_contact %}
+    <a class="btn btn-outline-secondary" href="{% url 'contacte:delete' contact.pk %}" aria-label="Șterge contactul" title="Șterge">
+      <i class="bi bi-trash" aria-hidden="true"></i>
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block page_content %}
+  <div class="row g-4">
+    <div class="col-lg-4">
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title-sm">Date de contact</h2>
+          <dl class="detail-list">
+            <dt>Telefon</dt>
+            <dd>{% if contact.phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% else %}—{% endif %}</dd>
+            <dt>Email</dt>
+            <dd>{% if contact.email %}<a href="mailto:{{ contact.email }}">{{ contact.email }}</a>{% else %}—{% endif %}</dd>
+            {% if contact.notes %}
+              <dt>Observații</dt>
+              <dd class="text-prewrap">{{ contact.notes }}</dd>
+            {% endif %}
+            <dt>Adăugat</dt>
+            <dd>{{ contact.created_at|date:"j F Y"|lower }}{% if contact.created_by %} de {{ contact.created_by|display_name }}{% endif %}</dd>
+          </dl>
+        </div>
+      </section>
+    </div>
+
+    <div class="col-lg-8">
+      <section class="card">
+        <div class="card-body">
+          <h2 class="card-title-sm">Oportunități</h2>
+          {% if opportunities %}
+            <ul class="item-list">
+              {% for opportunity in opportunities %}
+                <li>
+                  <a class="fw-semibold" href="{{ opportunity.get_absolute_url }}">{{ opportunity.title }}</a>
+                  <div class="item-meta">
+                    {% status_badge opportunity %}
+                    <span>{{ opportunity.owner|display_name }}</span>
+                    <span title="{{ opportunity.updated_at|date:'j F Y, H:i'|lower }}">actualizată {{ opportunity.updated_at|date:"j M Y"|lower }}</span>
+                  </div>
+                </li>
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-body-secondary mb-0">Nicio oportunitate încă pentru acest contact.</p>
+          {% endif %}
+        </div>
+      </section>
+    </div>
+  </div>
+{% endblock %}

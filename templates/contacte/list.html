@@ -1,0 +1,66 @@
+{% extends "layouts/page.html" %}
+{% load ui %}
+
+{% block title %}Contacte{% endblock %}
+{% block page_title %}Contacte{% endblock %}
+
+{% block page_actions %}
+  {% if perms.contacte.add_contact %}
+    <a class="btn btn-primary" href="{% url 'contacte:create' %}">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adaugă contact
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block page_content %}
+  <form class="toolbar" method="get" role="search">
+    <div class="toolbar-search">
+      <i class="bi bi-search" aria-hidden="true"></i>
+      <label class="visually-hidden" for="cauta">Caută</label>
+      <input class="form-control" type="search" id="cauta" name="q" value="{{ query }}"
+             placeholder="Caută după nume, telefon sau email…" autocomplete="off">
+    </div>
+    <label class="visually-hidden" for="tip">Tip</label>
+    <select class="form-select toolbar-select" id="tip" name="tip">
+      <option value="">Toate tipurile</option>
+      {% for value, label in kinds %}
+        <option value="{{ value }}"{% if value == kind %} selected{% endif %}>{{ label }}</option>
+      {% endfor %}
+    </select>
+    <button class="btn btn-outline-secondary" type="submit">Caută</button>
+    {% if query or kind %}<a class="btn btn-link" href="{% url 'contacte:list' %}">Resetează</a>{% endif %}
+  </form>
+
+  {% if contact_list %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Nume</th>
+              <th scope="col">Tip</th>
+              <th scope="col">Telefon</th>
+              <th scope="col" class="d-none d-md-table-cell">Email</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for contact in contact_list %}
+              <tr>
+                <td><a class="fw-semibold row-link" href="{{ contact.get_absolute_url }}">{{ contact.name }}</a></td>
+                <td class="text-body-secondary">{{ contact.get_kind_display }}</td>
+                <td class="text-nowrap">{% if contact.phone %}<a href="tel:{{ contact.phone }}">{{ contact.phone }}</a>{% else %}<span class="text-body-secondary">—</span>{% endif %}</td>
+                <td class="d-none d-md-table-cell text-truncate">{{ contact.email|default:"—" }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+    {% include "components/pagination.html" %}
+  {% elif query or kind %}
+    {% include "components/empty_state.html" with icon="bi-search" text="Niciun contact nu corespunde căutării." %}
+  {% else %}
+    {% url 'contacte:create' as create_url %}
+    {% include "components/empty_state.html" with icon="bi-person-lines-fill" text="Nu există încă niciun contact." action_url=create_url action_label="Adaugă contact" %}
+  {% endif %}
+{% endblock %}
