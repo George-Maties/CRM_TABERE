@@ -1,10 +1,55 @@
+from datetime import timedelta
+
 from django.conf import settings
 from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
+from django.db.models import Case, Q, Value, When
 from django.urls import reverse
-from django.utils import formats
+from django.utils import formats, timezone
 
 from apps.core.models import TaskBase
+
+
+class CampStatus(models.TextChoices):
+    """Where a camp is, worked out from its dates (never saved, so it moves on by itself)."""
+
+    PREPARING = "in_lucru", "În lucru"
+    FINAL_DETAILS = "ultimele_detalii", "Ultimele detalii"
+    RUNNING = "in_desfasurare", "În desfășurare"
+    FINISHED = "finalizata", "Finalizată"
+
+
+# From this many days before the start, a camp is in its final details
+FINAL_DETAILS_DAYS = 14
+
+# Bootstrap color of each status badge
+CAMP_STATUS_COLORS = {
+    CampStatus.PREPARING: "primary",
+    CampStatus.FINAL_DETAILS: "warning",
+    CampStatus.RUNNING: "success",
+    CampStatus.FINISHED: "secondary",
+}
+
+
+class CampQuerySet(models.QuerySet):
+    def with_status(self):
+        """Add `period_status` (a CampStatus value), so camps can be filtered and counted by it."""
+        today = timezone.localdate()
+        return self.annotate(
+            period_status=Case(
+                When(
+                    start_date__gt=today + timedelta(days=FINAL_DETAILS_DAYS),
+                    then=Value(CampStatus.PREPARING),
+                ),
+                When(start_date__gt=today, then=Value(CampStatus.FINAL_DETAILS)),
+                # A camp without an end date lasts one day.
+                When(
+                    Q(end_date__gte=today) | Q(end_date__isnull=True, start_date=today),
+                    then=Value(CampStatus.RUNNING),
+                ),
+                default=Value(CampStatus.FINISHED),
+            )
+        )
 
 
 class Camp(models.Model):
@@ -31,6 +76,8 @@ class Camp(models.Model):
     )
     created_at = models.DateTimeField("creată la", auto_now_add=True)
 
+    objects = CampQuerySet.as_manager()
+
     class Meta:
         ordering = ["-start_date", "name"]
         verbose_name = "tabără"
@@ -41,6 +88,27 @@ class Camp(models.Model):
 
     def get_absolute_url(self):
         return reverse("tabere:detail", args=[self.pk])
+
+    @property
+    def status(self):
+        """In work until 14 days before the start, then final details, running, finished."""
+        today = timezone.localdate()
+        days_left = (self.start_date - today).days
+        if days_left > FINAL_DETAILS_DAYS:
+            return CampStatus.PREPARING
+        if days_left > 0:
+            return CampStatus.FINAL_DETAILS
+        if (self.end_date or self.start_date) >= today:
+            return CampStatus.RUNNING
+        return CampStatus.FINISHED
+
+    @property
+    def status_label(self):
+        return CampStatus(self.status).label
+
+    @property
+    def status_color(self):
+        return CAMP_STATUS_COLORS[self.status]
 
 
 class Task(TaskBase):

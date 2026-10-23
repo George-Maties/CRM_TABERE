@@ -5,6 +5,7 @@
 {% block page_title %}{{ camp.name }}{% endblock %}
 {% block page_subtitle %}
   <p class="page-subtitle">
+    {% include "components/status_badge.html" with color=camp.status_color label=camp.status_label %}
     <span><i class="bi bi-calendar-event" aria-hidden="true"></i> {% include "tabere/_period.html" %}</span>
     {% if camp.accommodation %}
       <span><i class="bi bi-house-door" aria-hidden="true"></i> {{ camp.accommodation.name }}</span>

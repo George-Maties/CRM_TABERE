@@ -1,9 +1,13 @@
+from datetime import timedelta
+
+import pytest
 from django.urls import reverse
+from django.utils import timezone
 
 from apps.cazari.models import Accommodation
 from apps.oportunitati.models import Status
 
-from .models import Camp, Child, Task
+from .models import Camp, CampStatus, Child, Task
 
 
 def test_camp_list_counts_only_won_participants(seller_client, seller, make_opportunity):
@@ -274,3 +278,68 @@ def test_seller_cannot_tick_someone_elses_participant(
     assert response.status_code == 404
     theirs.refresh_from_db()
     assert not theirs.contact_goes
+
+
+def _camp_starting_in(days, length=6, **fields):
+    start = timezone.localdate() + timedelta(days=days)
+    return Camp.objects.create(
+        name=fields.pop("name", f"Tabăra {days}"),
+        start_date=start,
+        end_date=start + timedelta(days=length) if length is not None else None,
+        **fields,
+    )
+
+
+@pytest.mark.django_db
+@pytest.mark.parametrize(
+    "days, length, status",
+    [
+        (15, 6, CampStatus.PREPARING),
+        (14, 6, CampStatus.FINAL_DETAILS),
+        (1, 6, CampStatus.FINAL_DETAILS),
+        (0, 6, CampStatus.RUNNING),
+        (-6, 6, CampStatus.RUNNING),
+        (-7, 6, CampStatus.FINISHED),
+        (0, None, CampStatus.RUNNING),
+        (-1, None, CampStatus.FINISHED),
+    ],
+)
+def test_camp_status_follows_the_dates(days, length, status):
+    camp = _camp_starting_in(days, length)
+
+    assert camp.status == status
+    # The database works it out the same way, for filtering.
+    assert Camp.objects.with_status().get(pk=camp.pk).period_status == status
+
+
+def test_camp_list_filters_by_status_and_searches(seller_client):
+    place = Accommodation.objects.create(name="Pensiunea Bradul", city="Bran", capacity=40)
+    _camp_starting_in(60, name="Vară Bran", accommodation=place)
+    _camp_starting_in(5, name="Iarnă Predeal")
+    _camp_starting_in(-2, name="Primăvară")
+    _camp_starting_in(-30, name="Toamnă trecută")
+
+    response = seller_client.get(reverse("tabere:list"), {"status": "ultimele_detalii"})
+
+    assert [c.name for c in response.context["camp_list"]] == ["Iarnă Predeal"]
+    counts = {tab["label"]: tab["count"] for tab in response.context["status_tabs"]}
+    assert counts == {
+        "Toate": 4,
+        "În lucru": 1,
+        "Ultimele detalii": 1,
+        "În desfășurare": 1,
+        "Finalizată": 1,
+    }
+    html = response.content.decode()
+    assert 'data-auto-search="rezultate"' in html and "Ultimele detalii" in html
+
+    found = seller_client.get(reverse("tabere:list"), {"q": "bran"})
+    assert [c.name for c in found.context["camp_list"]] == ["Vară Bran"]
+
+
+def test_camp_page_shows_its_status(seller_client):
+    camp = _camp_starting_in(-1, name="Vară")
+
+    html = seller_client.get(camp.get_absolute_url()).content.decode()
+
+    assert "În desfășurare" in html

@@ -11,7 +11,7 @@ from apps.contacte.models import Contact
 from apps.oportunitati.models import Opportunity, Status
 
 from .forms import CampForm, ChildForm, TaskForm
-from .models import Camp, Child, Task
+from .models import Camp, CampStatus, Child, Task
 
 
 class CampListView(PermissionRequiredMixin, ListView):
@@ -20,13 +20,40 @@ class CampListView(PermissionRequiredMixin, ListView):
     template_name = "tabere/list.html"
 
     def get_queryset(self):
-        return (
-            super()
-            .get_queryset()
-            .select_related("accommodation")
-            .annotate(
-                participant_count=Count("opportunities", filter=Q(opportunities__status=Status.WON))
+        camps = Camp.objects.with_status().select_related("accommodation")
+        self.query = self.request.GET.get("q", "").strip()
+        self.status = self.request.GET.get("status", "")
+        if self.query:
+            camps = camps.filter(
+                Q(name__icontains=self.query)
+                | Q(accommodation__name__icontains=self.query)
+                | Q(accommodation__city__icontains=self.query)
             )
+        # The tabs count with the search but not with the status they filter.
+        self.counts = dict(
+            camps.order_by().values_list("period_status").annotate(total=Count("id"))
+        )
+        if self.status in CampStatus.values:
+            camps = camps.filter(period_status=self.status)
+        return camps.annotate(
+            participant_count=Count("opportunities", filter=Q(opportunities__status=Status.WON))
+        )
+
+    def get_context_data(self, **kwargs):
+        total = sum(self.counts.values())
+        status_tabs = [
+            {"value": None, "label": "Toate", "count": total, "active": not self.status}
+        ] + [
+            {
+                "value": value,
+                "label": label,
+                "count": self.counts.get(value, 0),
+                "active": value == self.status,
+            }
+            for value, label in CampStatus.choices
+        ]
+        return super().get_context_data(
+            query=self.query, status=self.status, status_tabs=status_tabs, **kwargs
         )
 
 
