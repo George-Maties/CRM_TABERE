@@ -12,10 +12,10 @@ description: Regulile de interfață ale CRM Tabere — Bootstrap 5.3 local, lay
 ## Stack
 
 - Template-uri Django randate pe server. Fără framework JS și fără pas de build.
-- **Bootstrap 5.3.8** și **Bootstrap Icons 1.13.1**, salvate local în `static/vendor/`. Nu adăuga link-uri CDN. O bibliotecă nouă se descarcă în `static/vendor/<lib>/`, cu versiune fixă.
-- CSS propriu doar în `static/css/app.css`. Folosește întâi clasele utilitare Bootstrap (`d-flex`, `gap-2`, `mb-3`, `text-body-secondary`...). Scrie CSS doar când nu există o utilitară potrivită.
-- Culorile vin din variabilele Bootstrap (`var(--bs-primary)`, `var(--bs-border-color)`), nu din valori hex scrise direct. Dimensiunile layout-ului sunt variabile la începutul `app.css` (`--app-navbar-height`, `--app-sidebar-width`).
-- JavaScript: doar `bootstrap.bundle.min.js`. Codul specific unei pagini se pune în `{% block extra_js %}`, fără `onclick` inline.
+- **Bootstrap 5.3.8**, **Bootstrap Icons 1.13.1** și fonturile de brand **Barlow** (text) și **Outfit** (titluri), salvate local în `static/vendor/`. Nu adăuga link-uri CDN. O bibliotecă nouă se descarcă în `static/vendor/<lib>/`, cu versiune fixă.
+- CSS propriu în două fișiere: `static/css/theme.css` (culori, fonturi, înlocuirile pentru Bootstrap, tema luminoasă și cea întunecată) și `static/css/app.css` (layout și componente). Folosește întâi clasele utilitare Bootstrap (`d-flex`, `gap-2`, `mb-3`, `text-body-secondary`...). Scrie CSS doar când nu există o utilitară potrivită.
+- Culorile vin din token-urile `--app-*` din `theme.css` (`var(--app-primary)`, `var(--app-accent)`, `var(--app-muted)`, `var(--app-border)`...) sau din variabilele Bootstrap mapate pe ele, nu din valori hex scrise direct. Fiecare culoare nouă se definește în **ambele** teme și se verifică la contrast (4,5:1 pentru text, 3:1 pentru iconițe). Culorile de brand vin de pe taberepeterra.com: portocaliul pur `--app-brand` e doar pentru iconițe și accente, iar textul și butoanele folosesc `--app-accent` / `--app-primary`. Dimensiunile layout-ului sunt variabile la începutul `app.css` (`--app-navbar-height`, `--app-sidebar-width`).
+- JavaScript: `bootstrap.bundle.min.js`, plus `static/js/preferences.js` (în `<head>`: aplică tema și starea sidebar-ului salvate, înainte de afișare) și `static/js/app.js` (comportamente activate prin atribute: `data-theme-toggle`, `data-sidebar-toggle`, `data-password-toggle`, `form[data-loading-text]`). Un comportament nou se adaugă tot în `app.js`, legat de un atribut `data-*`. Codul specific unei pagini se pune în `{% block extra_js %}`, fără `onclick` inline și fără `<script>` cu cod inline.
 
 ## Unde stă fiecare lucru
 
@@ -24,20 +24,20 @@ description: Regulile de interfață ale CRM Tabere — Bootstrap 5.3 local, lay
 | Scheletul HTML (CSS, JS, `<title>`) | `templates/base.html` |
 | Pagină cu navbar + sidebar | extinde `templates/layouts/app.html` |
 | Pagină fără meniu (login, resetare parolă) | extinde `templates/layouts/auth.html` |
-| Navbar | `templates/navbar/` (`navbar.html`, `brand.html`, `user_menu.html`) |
-| Sidebar | `templates/sidebar/` (`sidebar.html`, `item.html`) |
+| Navbar (bara de sus a conținutului) | `templates/navbar/` (`navbar.html`, `theme_toggle.html`, `user_menu.html`) |
+| Sidebar | `templates/sidebar/` (`sidebar.html`, `brand.html`, `item.html`) |
 | Bucăți refolosibile | `templates/components/` (vezi skill-ul `new-component`) |
 | Pagini ale unei aplicații | `templates/<app_label>/`, **nu** `apps/<app>/templates/` |
 | Butoanele din sidebar | `menu_items` din `apps/<app>/apps.py` (vezi `apps/core/navigation.py`) |
 
 Reguli:
 - Nu copia niciodată markup-ul navbar-ului sau al sidebar-ului într-o pagină. Extinde layout-ul.
-- O pagină completează `{% block title %}`, cu doar numele paginii (base adaugă ` · {{ site_name }}`), și `{% block content %}`.
+- O pagină completează `{% block title %}`, cu doar numele paginii (base adaugă ` · {{ brand_name }}`), și `{% block content %}`.
 - HTML-ul care apare în două sau mai multe locuri devine componentă în `templates/components/`.
 
 ## Context disponibil în orice template
 
-`site_name`, `home_url`, `sidebar_items` (doar pentru utilizatorii autentificați), `user`, `messages`, `request`. Le furnizează `apps/core/context_processors.py`, deci nu le trimite manual din view.
+`brand_name`, `home_url`, `sidebar_items` (doar pentru utilizatorii autentificați), `user`, `messages`, `request`. Le furnizează `apps/core/context_processors.py`, deci nu le trimite manual din view.
 
 ## Modele vizuale
 

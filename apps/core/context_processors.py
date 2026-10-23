@@ -6,7 +6,8 @@ from .navigation import sidebar_items
 
 def layout(request):
     context = {
-        "site_name": settings.SITE_NAME,
+        # Not "site_name": Django's auth views set their own (the domain) and it would win.
+        "brand_name": settings.SITE_NAME,
         "home_url": resolve_url(settings.LOGIN_REDIRECT_URL),
     }
     user = getattr(request, "user", None)

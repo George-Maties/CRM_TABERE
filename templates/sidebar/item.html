@@ -1,5 +1,4 @@
-<a class="nav-link d-flex align-items-center gap-2{% if item.active %} active{% endif %}"
-   href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>
-  <i class="bi {{ item.icon }}"></i>
-  <span>{{ item.label }}</span>
+<a class="sidebar-link{% if item.active %} active{% endif %}" href="{{ item.url }}" title="{{ item.label }}"{% if item.active %} aria-current="page"{% endif %}>
+  <i class="bi {{ item.icon }}" aria-hidden="true"></i>
+  <span class="sidebar-label">{{ item.label }}</span>
 </a>

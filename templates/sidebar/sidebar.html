@@ -1,19 +1,31 @@
 {% comment %}
   Buttons come from each app's AppConfig.menu_items (see apps/core/navigation.py).
-  On large screens it is a fixed column; on phones it slides in from the navbar button.
+  Large screens: a fixed column that collapses to icons (state saved in the browser).
+  Phones: slides in from the navbar menu button.
 {% endcomment %}
-<aside class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="app-sidebar"
-       aria-labelledby="app-sidebar-label">
-  <div class="offcanvas-header border-bottom">
-    <h5 class="offcanvas-title" id="app-sidebar-label">{{ site_name }}</h5>
-    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
-            data-bs-target="#app-sidebar" aria-label="Închide"></button>
-  </div>
+<aside class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="app-sidebar" aria-label="Meniu principal">
   <div class="offcanvas-body">
-    <nav class="nav nav-pills flex-column w-100 gap-1">
-      {% for item in sidebar_items %}
-        {% include "sidebar/item.html" %}
-      {% endfor %}
-    </nav>
+    <div class="sidebar-inner">
+      <div class="sidebar-brand">
+        {% include "sidebar/brand.html" %}
+        <button type="button" class="btn-close d-lg-none me-1" data-bs-dismiss="offcanvas"
+                data-bs-target="#app-sidebar" aria-label="Închide meniul"></button>
+      </div>
+
+      <nav class="sidebar-nav" aria-label="Secțiuni">
+        {% for item in sidebar_items %}
+          {% include "sidebar/item.html" %}
+        {% endfor %}
+      </nav>
+
+      <div class="sidebar-footer d-none d-lg-block">
+        <button type="button" class="sidebar-link sidebar-toggle" data-sidebar-toggle
+                data-label-collapse="Restrânge meniul" data-label-expand="Extinde meniul"
+                aria-controls="app-sidebar" aria-expanded="true" title="Restrânge / extinde meniul">
+          <i class="bi bi-chevron-bar-left" aria-hidden="true"></i>
+          <span class="sidebar-label">Restrânge meniul</span>
+        </button>
+      </div>
+    </div>
   </div>
 </aside>

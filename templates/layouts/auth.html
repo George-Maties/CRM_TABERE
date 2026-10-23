@@ -1,16 +1,23 @@
 {% extends "base.html" %}
 {% comment %}
-  Layout for pages without navbar/sidebar (login, password reset): a centered card.
+  Layout for pages without the menu (login, password reset).
+  Large screens: brand panel on the left, form on the right. Phones: a slim brand strip above the form.
+  Pages fill {% block title %} and {% block content %} (the form side).
 {% endcomment %}
 
-{% block body_class %}auth-page{% endblock %}
-
 {% block body %}
-  <main class="auth-wrapper">
-    <div class="card auth-card shadow-sm">
-      <div class="card-body p-4">
+  <div class="auth">
+    <aside class="auth-brand">
+      <div class="auth-brand-name">
+        {% include "components/logo.html" %}
+        <span>{{ brand_name }}</span>
+      </div>
+      <p class="auth-tagline">Fiecare tabără începe cu un contact.</p>
+    </aside>
+    <main class="auth-form">
+      <div class="auth-form-inner">
         {% block content %}{% endblock %}
       </div>
-    </div>
-  </main>
+    </main>
+  </div>
 {% endblock %}

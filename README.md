@@ -59,12 +59,15 @@ templates/
   base.html            scheletul HTML (CSS, JS)
   layouts/app.html     pagini cu navbar + sidebar
   layouts/auth.html    pagini fără meniu (login)
-  navbar/              navbar.html, brand.html, user_menu.html
-  sidebar/             sidebar.html, item.html
-  components/          bucăți refolosibile (mesaje, logo, pagina de bun venit)
+  navbar/              navbar.html, theme_toggle.html, user_menu.html
+  sidebar/             sidebar.html, brand.html, item.html
+  components/          bucăți refolosibile (mesaje, logo, inițiale, pagina de bun venit)
   <aplicație>/         template-urile fiecărei aplicații
-static/css/app.css     stilurile proprii (dimensiunile navbar / sidebar sunt variabile CSS)
-static/vendor/         Bootstrap 5.3.8 și Bootstrap Icons 1.13.1, salvate local
+static/css/theme.css   culori (brand Tabere pe Terra), fonturi, tema luminoasă / întunecată
+static/css/app.css     layout și componente (dimensiunile navbar / sidebar sunt variabile CSS)
+static/js/             preferences.js (tema, sidebar restrâns), app.js (comportamente data-*)
+static/img/            logo.png (de pe taberepeterra.com), contours.svg (fundalul de la login)
+static/vendor/         Bootstrap 5.3.8, Bootstrap Icons 1.13.1, fonturile Barlow și Outfit, salvate local
 deploy/                systemd, nginx, gunicorn, script de deploy
 ```
 

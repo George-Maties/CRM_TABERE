@@ -1,8 +1,11 @@
 {% comment %}
-  Usage: {% include "components/welcome.html" with icon="bi-people" title="Contacte" %}
+  Usage: {% include "components/welcome.html" with icon="bi-people" title="Contacte" text="..." %}
+  Required: icon, title. Optional: text (what the section will hold).
+  The heading is the page's <h1>.
 {% endcomment %}
-<div class="text-center py-5">
-  <i class="bi {{ icon }} welcome-icon"></i>
-  <h1 class="h3 mt-3">Bun venit în {{ title }}</h1>
-  <p class="text-body-secondary">Această secțiune este în lucru.</p>
-</div>
+<section class="welcome">
+  <i class="bi {{ icon }} welcome-icon" aria-hidden="true"></i>
+  <h1>Bun venit în {{ title }}</h1>
+  {% if text %}<p class="welcome-text">{{ text }}</p>{% endif %}
+  <p class="welcome-status">Secțiune în lucru</p>
+</section>

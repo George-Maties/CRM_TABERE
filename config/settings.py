@@ -13,7 +13,7 @@ DEBUG = env("DEBUG")
 ALLOWED_HOSTS = env.list("ALLOWED_HOSTS", default=[])
 CSRF_TRUSTED_ORIGINS = env.list("CSRF_TRUSTED_ORIGINS", default=[])
 
-SITE_NAME = env("SITE_NAME", default="CRM Tabere")
+SITE_NAME = env("SITE_NAME", default="Tabere pe Terra")
 
 INSTALLED_APPS = [
     "django.contrib.admin",

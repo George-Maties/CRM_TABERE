@@ -3,27 +3,44 @@
 {% block title %}Autentificare{% endblock %}
 
 {% block content %}
-  <div class="text-center mb-4">
-    <div class="auth-logo">{% include "components/logo.html" %}</div>
-    <h1 class="h4 mt-2 mb-1">{{ site_name }}</h1>
-    <p class="text-body-secondary small mb-0">Autentificați-vă pentru a continua</p>
-  </div>
+  <h1>Autentificare</h1>
+  <p class="text-body-secondary mb-4">Intrați în contul dumneavoastră din echipă.</p>
 
   {% if form.non_field_errors %}
-    <div class="alert alert-danger py-2 small" role="alert">
-      {% for error in form.non_field_errors %}{{ error }}{% endfor %}
+    <div class="alert alert-danger d-flex gap-2 py-2" role="alert">
+      <i class="bi bi-exclamation-circle mt-1" aria-hidden="true"></i>
+      <div>{% for error in form.non_field_errors %}{{ error }}{% endfor %}</div>
     </div>
   {% endif %}
 
-  <form method="post" novalidate>
+  <form method="post" novalidate data-loading-text="Se verifică…">
     {% csrf_token %}
     <input type="hidden" name="next" value="{{ next }}">
-    {% for field in form %}
-      <div class="mb-3">
+
+    {% with field=form.username %}
+      <div class="mb-3{% if field.errors %} field-invalid{% endif %}">
         <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
         {{ field }}
+        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
-    {% endfor %}
-    <button type="submit" class="btn btn-primary w-100">Autentificare</button>
+    {% endwith %}
+
+    {% with field=form.password %}
+      <div class="mb-4{% if field.errors %} field-invalid{% endif %}">
+        <label class="form-label" for="{{ field.id_for_label }}">{{ field.label }}</label>
+        <div class="input-group">
+          {{ field }}
+          <button type="button" class="btn btn-outline-secondary password-toggle" data-password-toggle
+                  aria-controls="{{ field.id_for_label }}" aria-pressed="false"
+                  aria-label="Arată parola" data-label-show="Arată parola" data-label-hide="Ascunde parola">
+            <i class="bi bi-eye" aria-hidden="true"></i>
+            <i class="bi bi-eye-slash" aria-hidden="true"></i>
+          </button>
+        </div>
+        {% for error in field.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+    {% endwith %}
+
+    <button type="submit" class="btn btn-primary w-100">Intră în cont</button>
   </form>
 {% endblock %}

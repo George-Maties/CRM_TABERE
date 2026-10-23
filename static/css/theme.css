@@ -1,0 +1,341 @@
+/*
+  Theme: colors, type and Bootstrap overrides.
+  To restyle the app, change the --app-* tokens below (light first, dark after).
+  Every Bootstrap color that matters maps to these tokens, so nothing else needs editing.
+*/
+
+/* Brand fonts from taberepeterra.com: Barlow for text, Outfit for headings. Both self-hosted. */
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-ext-400-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 400;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-400-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-ext-500-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 500;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-500-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-ext-600-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 600;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-600-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-ext-700-normal.woff2") format("woff2");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Barlow";
+  font-style: normal;
+  font-weight: 700;
+  font-display: swap;
+  src: url("../vendor/barlow/barlow-latin-700-normal.woff2") format("woff2");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("../vendor/outfit/outfit-latin-ext-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0100-02BA, U+02BD-02C5, U+02C7-02CC, U+02CE-02D7, U+02DD-02FF, U+0304, U+0308,
+    U+0329, U+1D00-1DBF, U+1E00-1E9F, U+1EF2-1EFF, U+2020, U+20A0-20AB, U+20AD-20C0, U+2113,
+    U+2C60-2C7F, U+A720-A7FF;
+}
+
+@font-face {
+  font-family: "Outfit";
+  font-style: normal;
+  font-weight: 300 900;
+  font-display: swap;
+  src: url("../vendor/outfit/outfit-latin-wght-normal.woff2") format("woff2-variations");
+  unicode-range: U+0000-00FF, U+0131, U+0152-0153, U+02BB-02BC, U+02C6, U+02DA, U+02DC, U+0304,
+    U+0308, U+0329, U+2000-206F, U+20AC, U+2122, U+2191, U+2193, U+2212, U+2215, U+FEFF, U+FFFD;
+}
+
+/*
+  Brand colors from taberepeterra.com:
+    orange #eb5e1a, light orange #ff9543, yellow #fdd85a, maroon #4f0600, cream #fff6e3.
+  Pure orange is too light for white text (3.4:1), so buttons and text use darker
+  oranges from the same family; the pure brand orange is kept for icons and accents.
+*/
+
+/* ---- Tokens: light ---- */
+:root,
+[data-bs-theme="light"] {
+  --app-font-body: "Barlow", system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  --app-font-heading: "Outfit", "Barlow", system-ui, sans-serif;
+
+  --app-bg: #fbf7f1;            /* page background */
+  --app-surface: #ffffff;       /* cards, inputs, dropdowns */
+  --app-sidebar-bg: #fff3de;    /* brand cream: second neutral layer */
+  --app-hover: rgba(42, 29, 23, 0.06);
+  --app-ink: #2a1d17;           /* main text */
+  --app-muted: #6b5a4d;         /* secondary text (6.6:1 on surface) */
+  --app-border: #eadfd2;
+
+  --app-primary: #c2470d;       /* fills: buttons, checked, selected (white text 5:1) */
+  --app-primary-rgb: 194, 71, 13;
+  --app-primary-hover: #a93d0b;
+  --app-primary-active: #923409;
+  --app-accent: #9f390a;        /* orange as text: links, active menu item */
+  --app-accent-rgb: 159, 57, 10;
+  --app-accent-subtle: #fde6d6; /* active menu background */
+  --app-brand: #eb5e1a;         /* pure brand orange: icons, dots (non-text) */
+  --app-brand-bg: #4f0600;      /* login brand panel: brand maroon */
+
+  --app-shadow-sm: 0 1px 2px rgba(42, 29, 23, 0.06);
+  --app-shadow: 0 2px 4px rgba(42, 29, 23, 0.04), 0 8px 24px rgba(42, 29, 23, 0.08);
+  --app-scrollbar: #dccbb8;
+}
+
+/* ---- Tokens: dark ---- */
+[data-bs-theme="dark"] {
+  --app-bg: #16100d;
+  --app-surface: #1f1713;
+  --app-sidebar-bg: #1a130f;
+  --app-hover: rgba(243, 233, 225, 0.06);
+  --app-ink: #f3e9e1;
+  --app-muted: #b9a89b;
+  --app-border: #35281f;
+
+  --app-primary: #c2470d;
+  --app-primary-rgb: 194, 71, 13;
+  --app-primary-hover: #b4420c;
+  --app-primary-active: #a03a0a;
+  --app-accent: #ff9543;        /* brand light orange */
+  --app-accent-rgb: 255, 149, 67;
+  --app-accent-subtle: #3a2218;
+  --app-brand: #ff7a35;
+  --app-brand-bg: #2a0904;
+
+  --app-shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
+  --app-shadow: 0 2px 4px rgba(0, 0, 0, 0.2), 0 8px 24px rgba(0, 0, 0, 0.35);
+  --app-scrollbar: #4a3a2f;
+}
+
+/* ---- Map tokens onto Bootstrap ---- */
+:root,
+[data-bs-theme="light"],
+[data-bs-theme="dark"] {
+  --bs-body-font-family: var(--app-font-body);
+  --bs-body-font-size: 1rem;
+  --bs-body-line-height: 1.55;
+  --bs-body-color: var(--app-ink);
+  --bs-body-bg: var(--app-surface);
+  --bs-emphasis-color: var(--app-ink);
+  --bs-secondary-color: var(--app-muted);
+  --bs-border-color: var(--app-border);
+  --bs-border-color-translucent: var(--app-border);
+  --bs-tertiary-bg: var(--app-bg);
+
+  --bs-primary: var(--app-primary);
+  --bs-primary-rgb: var(--app-primary-rgb);
+  --bs-primary-text-emphasis: var(--app-accent);
+  --bs-primary-bg-subtle: var(--app-accent-subtle);
+  --bs-primary-border-subtle: rgba(var(--app-accent-rgb), 0.35);
+  --bs-link-color: var(--app-accent);
+  --bs-link-color-rgb: var(--app-accent-rgb);
+  --bs-link-hover-color: var(--app-primary-hover);
+  --bs-link-hover-color-rgb: var(--app-accent-rgb);
+  --bs-focus-ring-color: rgba(var(--app-accent-rgb), 0.35);
+
+  --bs-border-radius: 0.5rem;
+  --bs-border-radius-sm: 0.375rem;
+  --bs-border-radius-lg: 0.75rem;
+  --bs-box-shadow-sm: var(--app-shadow-sm);
+  --bs-box-shadow: var(--app-shadow);
+}
+
+/* Components where Bootstrap hard-codes its blue */
+.btn-primary {
+  --bs-btn-bg: var(--app-primary);
+  --bs-btn-border-color: var(--app-primary);
+  --bs-btn-hover-bg: var(--app-primary-hover);
+  --bs-btn-hover-border-color: var(--app-primary-hover);
+  --bs-btn-active-bg: var(--app-primary-active);
+  --bs-btn-active-border-color: var(--app-primary-active);
+  --bs-btn-disabled-bg: var(--app-primary);
+  --bs-btn-disabled-border-color: var(--app-primary);
+  --bs-btn-focus-shadow-rgb: var(--app-accent-rgb);
+}
+
+.btn-outline-primary {
+  --bs-btn-color: var(--app-accent);
+  --bs-btn-border-color: var(--app-accent);
+  --bs-btn-hover-color: #fff;
+  --bs-btn-hover-bg: var(--app-primary);
+  --bs-btn-hover-border-color: var(--app-primary);
+  --bs-btn-active-color: #fff;
+  --bs-btn-active-bg: var(--app-primary-active);
+  --bs-btn-active-border-color: var(--app-primary-active);
+  --bs-btn-disabled-color: var(--app-accent);
+  --bs-btn-disabled-border-color: var(--app-accent);
+  --bs-btn-focus-shadow-rgb: var(--app-accent-rgb);
+}
+
+.btn-outline-secondary {
+  --bs-btn-color: var(--app-muted);
+  --bs-btn-border-color: var(--app-border);
+  --bs-btn-hover-color: var(--app-ink);
+  --bs-btn-hover-bg: var(--app-hover);
+  --bs-btn-hover-border-color: var(--app-border);
+  --bs-btn-active-color: var(--app-ink);
+  --bs-btn-active-bg: var(--app-hover);
+  --bs-btn-active-border-color: var(--app-border);
+  --bs-btn-focus-shadow-rgb: var(--app-accent-rgb);
+}
+
+.form-control:focus,
+.form-select:focus,
+.form-check-input:focus {
+  border-color: rgba(var(--app-accent-rgb), 0.6);
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+.form-check-input:checked,
+.form-check-input[type="checkbox"]:indeterminate {
+  background-color: var(--app-primary);
+  border-color: var(--app-primary);
+}
+
+.dropdown-menu {
+  --bs-dropdown-link-active-bg: var(--app-primary);
+  --bs-dropdown-link-active-color: #fff;
+  --bs-dropdown-link-hover-bg: var(--app-hover);
+  --bs-dropdown-box-shadow: var(--app-shadow);
+  --bs-dropdown-font-size: 0.9375rem;
+}
+
+.nav-pills {
+  --bs-nav-pills-link-active-bg: var(--app-accent-subtle);
+  --bs-nav-pills-link-active-color: var(--app-accent);
+}
+
+.nav-link:focus-visible {
+  box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+.btn-close {
+  --bs-btn-close-focus-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+.list-group {
+  --bs-list-group-active-bg: var(--app-primary);
+  --bs-list-group-active-border-color: var(--app-primary);
+}
+
+.pagination {
+  --bs-pagination-color: var(--app-accent);
+  --bs-pagination-hover-color: var(--app-accent);
+  --bs-pagination-focus-color: var(--app-accent);
+  --bs-pagination-active-bg: var(--app-primary);
+  --bs-pagination-active-border-color: var(--app-primary);
+  --bs-pagination-focus-box-shadow: 0 0 0 0.25rem var(--bs-focus-ring-color);
+}
+
+.progress,
+.progress-stacked {
+  --bs-progress-bar-bg: var(--app-primary);
+}
+
+/* ---- Browser surfaces ---- */
+html {
+  accent-color: var(--app-primary);
+  scrollbar-color: var(--app-scrollbar) transparent;
+}
+
+::selection {
+  background-color: rgba(var(--app-accent-rgb), 0.22);
+}
+
+input,
+textarea {
+  caret-color: var(--app-accent);
+}
+
+:focus-visible {
+  outline: 2px solid var(--app-accent);
+  outline-offset: 2px;
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+h1, h2, h3, h4, h5, h6,
+.h1, .h2, .h3, .h4, .h5, .h6 {
+  font-family: var(--app-font-heading);
+  letter-spacing: -0.01em;
+  text-wrap: balance;
+}
+
+.table {
+  font-variant-numeric: tabular-nums;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    transition-duration: 0.01ms !important;
+    animation-duration: 0.01ms !important;
+  }
+}
