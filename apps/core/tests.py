@@ -4,7 +4,8 @@ from django.urls import reverse
 
 from apps.core.navigation import MenuItem, sidebar_items
 
-SECTIONS = ["wall:index", "oportunitati:list", "contacte:list"]
+SECTIONS = ["wall:index", "oportunitati:list", "contacte:list", "tabere:list"]
+MENU = ["Wall", "Oportunități", "Contacte", "Tabere"]
 
 
 @pytest.mark.django_db
@@ -32,7 +33,7 @@ def test_section_renders_with_sidebar(admin_client, url_name):
 
     assert response.status_code == 200
     items = response.context["sidebar_items"]
-    assert [item["label"] for item in items] == ["Wall", "Oportunități", "Contacte"]
+    assert [item["label"] for item in items] == MENU
     assert [item["url"] for item in items if item["active"]] == [reverse(url_name)]
 
 
@@ -53,11 +54,7 @@ def test_sidebar_by_role(rf, django_user_model, seller):
     request = rf.get("/")
 
     request.user = seller
-    assert [item["label"] for item in sidebar_items(request)] == [
-        "Wall",
-        "Oportunități",
-        "Contacte",
-    ]
+    assert [item["label"] for item in sidebar_items(request)] == MENU
 
     request.user = django_user_model.objects.create_user(username="fara-rol")
     assert [item["label"] for item in sidebar_items(request)] == ["Wall"]

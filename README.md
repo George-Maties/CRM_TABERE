@@ -51,7 +51,7 @@ python manage.py seed_demo --reset    # le recreează (șterge doar contactele c
 |---|---|---|
 | Dev | superuser | tot, inclusiv administrarea utilizatorilor |
 | Fondator | grupul „Fondator” | vede toate oportunitățile, poate șterge; nu gestionează utilizatori |
-| Vânzător | grupul „Vânzător” | vede doar oportunitățile lui sau pe cele unde are o sarcină; nu poate șterge |
+| Vânzător | grupul „Vânzător” | vede doar oportunitățile lui; poate crea tabere și sarcini, dar nu poate edita tabere; nu poate șterge |
 
 Rolurile se atribuie din Administrare → Utilizatori → grupuri. Rolurile noi se creează tot acolo, ca grupuri cu permisiunile bifate. Definițiile rolurilor de bază sunt în `apps/accounts/roles.py`.
 
@@ -71,6 +71,7 @@ apps/core/             lucruri comune: health check, meniul din sidebar
 apps/wall/             secțiunea Wall
 apps/oportunitati/     secțiunea Oportunități
 apps/contacte/         secțiunea Contacte
+apps/tabere/           secțiunea Tabere (deocamdată: tabere, participanți, sarcini)
 templates/
   base.html            scheletul HTML (CSS, JS)
   layouts/app.html     pagini cu navbar + sidebar

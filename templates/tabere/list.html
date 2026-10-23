@@ -1,0 +1,44 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}Tabere{% endblock %}
+{% block page_title %}Tabere{% endblock %}
+
+{% block page_actions %}
+  {% if perms.tabere.add_camp %}
+    <a class="btn btn-primary" href="{% url 'tabere:create' %}">
+      <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adaugă tabără
+    </a>
+  {% endif %}
+{% endblock %}
+
+{% block page_content %}
+  {% if camp_list %}
+    <div class="card">
+      <div class="table-responsive">
+        <table class="table table-hover align-middle mb-0">
+          <thead>
+            <tr>
+              <th scope="col">Tabăra</th>
+              <th scope="col">Perioada</th>
+              <th scope="col" class="d-none d-md-table-cell">Locație</th>
+              <th scope="col" class="text-end">Participanți</th>
+            </tr>
+          </thead>
+          <tbody>
+            {% for camp in camp_list %}
+              <tr>
+                <td><a class="fw-semibold row-link" href="{{ camp.get_absolute_url }}">{{ camp.name }}</a></td>
+                <td class="text-nowrap">{% include "tabere/_period.html" %}</td>
+                <td class="d-none d-md-table-cell text-body-secondary">{{ camp.location|default:"—" }}</td>
+                <td class="text-end">{{ camp.participant_count }}</td>
+              </tr>
+            {% endfor %}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  {% else %}
+    {% url 'tabere:create' as create_url %}
+    {% include "components/empty_state.html" with icon="bi-backpack" text="Nu există încă nicio tabără. Se creează de aici sau când o oportunitate devine „Câștigată”." action_url=create_url action_label="Adaugă tabără" %}
+  {% endif %}
+{% endblock %}

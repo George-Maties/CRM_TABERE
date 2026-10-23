@@ -6,6 +6,9 @@ The "Dev" role is not a group: it is a superuser account, which has every permis
 New roles can also be created as groups in the admin, without touching this file.
 """
 
+from django.contrib.auth import get_user_model
+from django.db.models import Q
+
 FOUNDER = "Fondator"
 SELLER = "Vânzător"
 
@@ -18,9 +21,12 @@ _SELLER_PERMISSIONS = [
     "oportunitati.change_opportunity",
     "oportunitati.view_note",
     "oportunitati.add_note",
-    "oportunitati.view_task",
-    "oportunitati.add_task",
-    "oportunitati.change_task",
+    # Winning an opportunity can create the camp the contact joins.
+    "tabere.view_camp",
+    "tabere.add_camp",
+    "tabere.view_task",
+    "tabere.add_task",
+    "tabere.change_task",
 ]
 
 ROLES = {
@@ -29,12 +35,25 @@ ROLES = {
         *_SELLER_PERMISSIONS,
         "contacte.delete_contact",
         "oportunitati.delete_opportunity",
-        "oportunitati.delete_task",
         "oportunitati.view_all_opportunities",
+        "tabere.change_camp",
+        "tabere.delete_camp",
+        "tabere.delete_task",
     ],
-    # Sees only the opportunities they own or have a task on; cannot delete.
+    # Sees only the opportunities they own; cannot delete.
     SELLER: _SELLER_PERMISSIONS,
 }
+
+
+def team_members():
+    """Active users with a role: the people an opportunity or a task can be given to."""
+    return (
+        get_user_model()
+        .objects.filter(is_active=True)
+        .filter(Q(is_superuser=True) | Q(groups__isnull=False))
+        .distinct()
+        .order_by("first_name", "username")
+    )
 
 
 def role_label(user):

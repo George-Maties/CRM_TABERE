@@ -1,10 +1,9 @@
 from django.conf import settings
 from django.db import models
-from django.db.models import Q
 from django.urls import reverse
-from django.utils import timezone
 
 from apps.contacte.models import Contact
+from apps.tabere.models import Camp
 
 
 class Status(models.TextChoices):
@@ -12,17 +11,19 @@ class Status(models.TextChoices):
     CALLED = "sunat", "Sunat"
     ANSWERED = "raspuns", "Răspuns"
     IN_PROGRESS = "in_lucru", "În lucru"
-    WON = "hotarat", "Hotărât"
-    LOST = "refuzat", "Refuzat / neinteresat"
+    WON = "castigata", "Câștigată"
+    LOST = "pierduta", "Pierdută"
+
+
+OPEN_STATUSES = [Status.NEW, Status.CALLED, Status.ANSWERED, Status.IN_PROGRESS]
 
 
 class OpportunityQuerySet(models.QuerySet):
     def visible_to(self, user):
-        """Everything for roles with view_all_opportunities; otherwise what the user owns
-        or has a task on (so a task assigned by someone else can always be opened)."""
+        """Everything for roles with view_all_opportunities; otherwise what the user owns."""
         if user.has_perm("oportunitati.view_all_opportunities"):
             return self
-        return self.filter(Q(owner=user) | Q(tasks__assigned_to=user)).distinct()
+        return self.filter(owner=user)
 
 
 class Opportunity(models.Model):
@@ -31,6 +32,15 @@ class Opportunity(models.Model):
     )
     title = models.CharField("titlu", max_length=200)
     status = models.CharField("status", max_length=20, choices=Status.choices, default=Status.NEW)
+    # Set when the opportunity is won: the camp the contact goes to.
+    camp = models.ForeignKey(
+        Camp,
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="opportunities",
+        verbose_name="tabără",
+    )
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
@@ -62,22 +72,21 @@ class Opportunity(models.Model):
     def get_absolute_url(self):
         return reverse("oportunitati:detail", args=[self.pk])
 
-    def change_status(self, new_status, user):
-        """Set the status and record the change in the notes. Returns False if unchanged."""
-        if new_status == self.status:
-            return False
-        old_label = self.get_status_display()
+    def change_status(self, new_status, user, comment, camp=None):
+        """Set the status and record it, with the required comment, in the notes.
+        Winning needs the camp the contact joins; leaving "won" takes them out of it."""
+        if new_status == Status.WON and camp is None:
+            raise ValueError("A won opportunity needs a camp.")
+        change = f"{self.get_status_display()} → {Status(new_status).label}"
         self.status = new_status
-        self.save(update_fields=["status", "updated_at"])
-        self.notes.create(
-            author=user,
-            is_status_change=True,
-            text=f"{old_label} → {self.get_status_display()}",
-        )
-        return True
+        self.camp = camp if new_status == Status.WON else None
+        if self.camp:
+            change += f" · {self.camp.name}"
+        self.save(update_fields=["status", "camp", "updated_at"])
+        self.notes.create(author=user, status_change=change, text=comment)
 
     def touch(self):
-        """Mark the opportunity as just updated (new note, new task)."""
+        """Mark the opportunity as just updated (new note)."""
         self.save(update_fields=["updated_at"])
 
 
@@ -93,7 +102,8 @@ class Note(models.Model):
         verbose_name="autor",
     )
     text = models.TextField("notă")
-    is_status_change = models.BooleanField("schimbare de status", default=False)
+    # "Nou → Sunat" when the note records a status change; its text is the required comment.
+    status_change = models.CharField("schimbare de status", max_length=300, blank=True)
     created_at = models.DateTimeField("scrisă la", auto_now_add=True)
 
     class Meta:
@@ -103,44 +113,3 @@ class Note(models.Model):
 
     def __str__(self):
         return self.text[:60]
-
-
-class Task(models.Model):
-    opportunity = models.ForeignKey(
-        Opportunity, on_delete=models.CASCADE, related_name="tasks", verbose_name="oportunitate"
-    )
-    title = models.CharField("ce e de făcut", max_length=300)
-    assigned_to = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="tasks",
-        verbose_name="atribuită lui",
-    )
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="+",
-        verbose_name="creată de",
-    )
-    due_date = models.DateField("termen", null=True, blank=True)
-    done = models.BooleanField("gata", default=False)
-    done_at = models.DateTimeField("terminată la", null=True, blank=True)
-    created_at = models.DateTimeField("creată la", auto_now_add=True)
-
-    class Meta:
-        ordering = ["done", "due_date", "created_at"]
-        verbose_name = "sarcină"
-        verbose_name_plural = "sarcini"
-
-    def __str__(self):
-        return self.title
-
-    @property
-    def is_overdue(self):
-        return not self.done and self.due_date is not None and self.due_date < timezone.localdate()
-
-    def toggle_done(self):
-        self.done = not self.done
-        self.done_at = timezone.now() if self.done else None
-        self.save(update_fields=["done", "done_at"])

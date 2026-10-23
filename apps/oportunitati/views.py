@@ -9,8 +9,8 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 
 from apps.contacte.models import Contact
 
-from .forms import NoteForm, OpportunityForm, StatusForm, TaskForm
-from .models import Opportunity, Status, Task
+from .forms import NoteForm, OpportunityForm, StatusForm
+from .models import Opportunity, Status
 
 
 class VisibleOpportunityMixin:
@@ -68,11 +68,9 @@ class OpportunityDetailView(PermissionRequiredMixin, VisibleOpportunityMixin, De
 
     def get_context_data(self, **kwargs):
         context = {
-            "status_form": StatusForm(initial={"status": self.object.status}),
+            "status_form": StatusForm(opportunity=self.object, user=self.request.user),
             "note_form": NoteForm(),
-            "task_form": TaskForm(initial={"assigned_to": self.request.user}),
             "notes": self.object.notes.select_related("author"),
-            "tasks": self.object.tasks.select_related("assigned_to", "created_by"),
         }
         context.update(kwargs)
         return super().get_context_data(**context)
@@ -146,11 +144,14 @@ class StatusUpdateView(OpportunityActionView):
 
     def post(self, request, pk):
         opportunity = self.get_opportunity(pk)
-        form = StatusForm(request.POST)
+        form = StatusForm(request.POST, opportunity=opportunity, user=request.user)
         if not form.is_valid():
             return self.render_page(opportunity, status_form=form)
-        if opportunity.change_status(form.cleaned_data["status"], request.user):
-            messages.success(request, f"Status schimbat în „{opportunity.get_status_display()}”.")
+        camp = form.save()
+        message = f"Status schimbat în „{opportunity.get_status_display()}”."
+        if camp:
+            message += f" Contactul {opportunity.contact.name} a fost adăugat la „{camp.name}”."
+        messages.success(request, message)
         return redirect(opportunity)
 
 
@@ -167,40 +168,3 @@ class NoteCreateView(OpportunityActionView):
         form.save()
         opportunity.touch()
         return redirect(f"{opportunity.get_absolute_url()}#istoric")
-
-
-class TaskCreateView(OpportunityActionView):
-    permission_required = "oportunitati.add_task"
-
-    def post(self, request, pk):
-        opportunity = self.get_opportunity(pk)
-        form = TaskForm(request.POST)
-        if not form.is_valid():
-            return self.render_page(opportunity, task_form=form)
-        form.instance.opportunity = opportunity
-        form.instance.created_by = request.user
-        task = form.save()
-        opportunity.touch()
-        messages.success(
-            request, f"Sarcina a fost atribuită lui {_display_name(task.assigned_to)}."
-        )
-        return redirect(f"{opportunity.get_absolute_url()}#sarcini")
-
-
-class TaskToggleView(OpportunityActionView):
-    permission_required = "oportunitati.change_task"
-
-    def post(self, request, pk):
-        task = get_object_or_404(
-            Task.objects.filter(opportunity__in=Opportunity.objects.visible_to(request.user)),
-            pk=pk,
-        )
-        task.toggle_done()
-        next_url = request.POST.get("next")
-        if next_url and next_url.startswith("/") and not next_url.startswith("//"):
-            return redirect(next_url)
-        return redirect(f"{task.opportunity.get_absolute_url()}#sarcini")
-
-
-def _display_name(user):
-    return user.get_full_name() or user.get_username()

@@ -1,11 +1,11 @@
 {% load ui %}
 {% comment %}
-  Usage: {% include "components/task_item.html" with task=task show_opportunity=True %}
-  One task with its done/undone button. show_opportunity adds a link to its opportunity (Wall).
+  Usage: {% include "components/task_item.html" with task=task show_camp=True %}
+  One task with its done/undone button. show_camp adds a link to its camp (Wall).
 {% endcomment %}
 <li class="task{% if task.done %} task-done{% endif %}">
-  {% if perms.oportunitati.change_task %}
-    <form method="post" action="{% url 'oportunitati:task-toggle' task.pk %}">
+  {% if perms.tabere.change_task %}
+    <form method="post" action="{% url 'tabere:task-toggle' task.pk %}">
       {% csrf_token %}
       <input type="hidden" name="next" value="{{ request.get_full_path }}">
       <button class="task-check" type="submit" aria-pressed="{{ task.done|yesno:'true,false' }}"
@@ -17,8 +17,8 @@
   <div class="task-body">
     <div class="task-title">{{ task.title }}</div>
     <div class="item-meta">
-      {% if show_opportunity %}
-        <a href="{{ task.opportunity.get_absolute_url }}#sarcini">{{ task.opportunity.contact.name }} · {{ task.opportunity.title }}</a>
+      {% if show_camp %}
+        <a href="{{ task.camp.get_absolute_url }}#sarcini"><i class="bi bi-backpack" aria-hidden="true"></i> {{ task.camp.name }}</a>
       {% else %}
         <span><i class="bi bi-person" aria-hidden="true"></i> {{ task.assigned_to|display_name }}</span>
       {% endif %}

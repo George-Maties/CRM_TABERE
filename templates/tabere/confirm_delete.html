@@ -1,0 +1,25 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}Șterge {{ object.name }}{% endblock %}
+{% block page_title %}Ștergeți tabăra?{% endblock %}
+
+{% block page_content %}
+  <form class="card form-card" method="post">
+    <div class="card-body">
+      {% csrf_token %}
+      {% if object.opportunities.exists %}
+        <div class="alert alert-warning">
+          Tabăra <strong>{{ object.name }}</strong> are participanți și nu poate fi ștearsă.
+          Schimbați întâi tabăra din oportunitățile lor.
+        </div>
+        <a class="btn btn-outline-secondary" href="{{ object.get_absolute_url }}">Înapoi la tabără</a>
+      {% else %}
+        <p>Tabăra <strong>{{ object.name }}</strong> va fi ștearsă definitiv{% if object.tasks.exists %}, împreună cu sarcinile ei{% endif %}.</p>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger">Da, șterge tabăra</button>
+          <a class="btn btn-link" href="{{ object.get_absolute_url }}">Renunță</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+{% endblock %}

@@ -7,6 +7,7 @@ class Contact(models.Model):
     class Kind(models.TextChoices):
         PARENT = "parinte", "Părinte"
         SCHOOL = "scoala", "Școală"
+        TEACHER = "profesor", "Profesor"
         COMPANY = "firma", "Firmă"
         OTHER = "altul", "Altul"
 

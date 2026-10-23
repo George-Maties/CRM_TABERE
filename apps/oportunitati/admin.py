@@ -1,6 +1,6 @@
 from django.contrib import admin
 
-from .models import Note, Opportunity, Task
+from .models import Note, Opportunity
 
 
 class NoteInline(admin.TabularInline):
@@ -8,20 +8,9 @@ class NoteInline(admin.TabularInline):
     extra = 0
 
 
-class TaskInline(admin.TabularInline):
-    model = Task
-    extra = 0
-
-
 @admin.register(Opportunity)
 class OpportunityAdmin(admin.ModelAdmin):
-    list_display = ["title", "contact", "status", "owner", "updated_at"]
-    list_filter = ["status", "owner"]
+    list_display = ["title", "contact", "status", "camp", "owner", "updated_at"]
+    list_filter = ["status", "owner", "camp"]
     search_fields = ["title", "contact__name"]
-    inlines = [NoteInline, TaskInline]
-
-
-@admin.register(Task)
-class TaskAdmin(admin.ModelAdmin):
-    list_display = ["title", "assigned_to", "due_date", "done", "opportunity"]
-    list_filter = ["done", "assigned_to"]
+    inlines = [NoteInline]

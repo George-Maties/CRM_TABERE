@@ -1,26 +1,11 @@
 from django import forms
-from django.contrib.auth import get_user_model
-from django.db.models import Q
+from django.db import transaction
 
-from apps.core.forms import BootstrapFormMixin
+from apps.accounts.roles import team_members
+from apps.core.forms import BootstrapFormMixin, UserChoiceField
+from apps.tabere.models import Camp
 
-from .models import Note, Opportunity, Status, Task
-
-
-class UserChoiceField(forms.ModelChoiceField):
-    def label_from_instance(self, obj):
-        return obj.get_full_name() or obj.get_username()
-
-
-def team_members():
-    """Active users with a role: the people an opportunity or a task can be given to."""
-    return (
-        get_user_model()
-        .objects.filter(is_active=True)
-        .filter(Q(is_superuser=True) | Q(groups__isnull=False))
-        .distinct()
-        .order_by("first_name", "username")
-    )
+from .models import OPEN_STATUSES, Note, Opportunity, Status
 
 
 class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
@@ -28,7 +13,7 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
         label="Ce ați discutat",
         required=False,
         widget=forms.Textarea(attrs={"rows": 4}),
-        help_text="Opțional. Apare ca primă notă în istoric.",
+        help_text="Obligatoriu dacă statusul nu e „Nou”. Apare ca primă notă în istoric.",
     )
 
     class Meta:
@@ -48,10 +33,90 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
             # Status and notes change on the opportunity page, where each change is recorded.
             del self.fields["note"]
             del self.fields["status"]
+        else:
+            # Winning or losing needs a camp or a reason: that happens on the opportunity page.
+            self.fields["status"].choices = [(s.value, s.label) for s in OPEN_STATUSES]
+
+    def clean(self):
+        cleaned = super().clean()
+        status = cleaned.get("status")
+        if status and status != Status.NEW and not cleaned.get("note"):
+            self.add_error("note", "Scrieți ce ați discutat: statusul nu mai e „Nou”.")
+        return cleaned
 
 
 class StatusForm(BootstrapFormMixin, forms.Form):
-    status = forms.ChoiceField(label="Status", choices=Status.choices)
+    """Change an opportunity's status. Always needs a comment; winning also needs the camp
+    the contact joins, either an existing one or a new one created here."""
+
+    status = forms.ChoiceField(label="Status nou", choices=Status.choices)
+    camp = forms.ModelChoiceField(
+        label="Tabăra",
+        queryset=Camp.objects.all(),
+        required=False,
+        empty_label="Tabără nouă…",
+    )
+    camp_name = forms.CharField(label="Numele taberei noi", max_length=200, required=False)
+    camp_start = forms.DateField(
+        label="Începe pe", required=False, widget=forms.DateInput(attrs={"type": "date"})
+    )
+    camp_end = forms.DateField(
+        label="Se termină pe", required=False, widget=forms.DateInput(attrs={"type": "date"})
+    )
+    comment = forms.CharField(
+        label="Comentariu",
+        widget=forms.Textarea(attrs={"rows": 3}),
+        help_text="Obligatoriu. Pentru „Pierdută”, scrieți motivul.",
+    )
+
+    def __init__(self, *args, opportunity, user, **kwargs):
+        self.opportunity = opportunity
+        self.user = user
+        kwargs.setdefault("initial", {"status": opportunity.status, "camp": opportunity.camp})
+        super().__init__(*args, **kwargs)
+        if not user.has_perm("tabere.add_camp"):
+            for name in ("camp_name", "camp_start", "camp_end"):
+                del self.fields[name]
+            self.fields["camp"].empty_label = "Alegeți tabăra…"
+
+    def clean(self):
+        cleaned = super().clean()
+        status, camp = cleaned.get("status"), cleaned.get("camp")
+        if status == Status.WON:
+            if camp is None and "camp_name" not in self.fields:
+                self.add_error("camp", "Alegeți tabăra în care merge contactul.")
+            elif camp is None:
+                if not cleaned.get("camp_name"):
+                    self.add_error(
+                        "camp_name", "Alegeți o tabără existentă sau scrieți numele uneia noi."
+                    )
+                if not cleaned.get("camp_start"):
+                    self.add_error(
+                        "camp_start", "Data de început e obligatorie pentru o tabără nouă."
+                    )
+                start, end = cleaned.get("camp_start"), cleaned.get("camp_end")
+                if start and end and end < start:
+                    self.add_error("camp_end", "Tabăra nu se poate termina înainte să înceapă.")
+            elif status == self.opportunity.status and camp == self.opportunity.camp:
+                self.add_error("camp", "Contactul e deja în această tabără.")
+        elif status == self.opportunity.status:
+            self.add_error("status", "Alegeți un status diferit de cel actual.")
+        return cleaned
+
+    @transaction.atomic
+    def save(self):
+        """Apply the change. Returns the camp the contact joined (None if not won)."""
+        data = self.cleaned_data
+        camp = data.get("camp")
+        if data["status"] == Status.WON and camp is None:
+            camp = Camp.objects.create(
+                name=data["camp_name"],
+                start_date=data["camp_start"],
+                end_date=data.get("camp_end"),
+                created_by=self.user,
+            )
+        self.opportunity.change_status(data["status"], self.user, data["comment"], camp=camp)
+        return camp if data["status"] == Status.WON else None
 
 
 class NoteForm(BootstrapFormMixin, forms.ModelForm):
@@ -60,15 +125,3 @@ class NoteForm(BootstrapFormMixin, forms.ModelForm):
         fields = ["text"]
         labels = {"text": "Notă nouă"}
         widgets = {"text": forms.Textarea(attrs={"rows": 3, "placeholder": "Ce ați discutat…"})}
-
-
-class TaskForm(BootstrapFormMixin, forms.ModelForm):
-    class Meta:
-        model = Task
-        fields = ["title", "assigned_to", "due_date"]
-        field_classes = {"assigned_to": UserChoiceField}
-        widgets = {"due_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d")}
-
-    def __init__(self, *args, **kwargs):
-        super().__init__(*args, **kwargs)
-        self.fields["assigned_to"].queryset = team_members()

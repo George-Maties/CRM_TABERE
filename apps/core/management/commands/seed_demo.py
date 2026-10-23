@@ -1,4 +1,4 @@
-from datetime import timedelta
+from datetime import date, timedelta
 
 from django.contrib.auth import get_user_model
 from django.core.management.base import BaseCommand, CommandError
@@ -7,7 +7,8 @@ from django.utils import timezone
 
 from apps.accounts.roles import FOUNDER, SELLER
 from apps.contacte.models import Contact
-from apps.oportunitati.models import Note, Opportunity, Status, Task
+from apps.oportunitati.models import Note, Opportunity, Status
+from apps.tabere.models import Camp, Task
 
 # Demo contacts are recognised by this e-mail domain, so --reset never touches real data.
 DEMO_DOMAIN = "@example.com"
@@ -31,9 +32,19 @@ CONTACTS = [
     ("Softwave SRL", Contact.Kind.COMPANY, "0700 100 206", "hr.softwave"),
     ("Cristina Stan", Contact.Kind.PARENT, "0700 100 207", "cristina.stan"),
     ("Radu Georgescu", Contact.Kind.PARENT, "0700 100 208", "radu.georgescu"),
-    ("Asociația Părinților Sector 3", Contact.Kind.OTHER, "0700 100 209", "contact.aps3"),
+    ("Prof. Maria Vasilescu", Contact.Kind.TEACHER, "0700 100 209", "maria.vasilescu"),
     ("Ioana Marinescu", Contact.Kind.PARENT, "0700 100 210", "ioana.marinescu"),
 ]
+
+# Demo camps are found again by name; --reset removes those left without participants.
+CAMPS = {
+    "vara2026": ("Tabăra de vară 2026, seria 2", date(2026, 7, 12), date(2026, 7, 19), "Bran"),
+    "iarna2027": ("Tabăra de iarnă 2027", date(2027, 2, 10), date(2027, 2, 16), "Predeal"),
+    "vara2027": ("Tabăra de vară 2027, seria 1", date(2027, 7, 4), date(2027, 7, 11), "Bran"),
+}
+
+# Won opportunities (by index in OPPORTUNITIES) and the camp they joined
+WON_CAMPS = {3: "vara2026", 8: "vara2026"}
 
 # contact index, title, status, owner ("seller"/"founder"), days since last activity, notes
 OPPORTUNITIES = [
@@ -137,14 +148,21 @@ OPPORTUNITIES = [
     (9, "Tabăra de vară 2027", Status.NEW, "seller", 0, []),
 ]
 
-# opportunity index, task, assignee, created by, due in days (None = no date), done
+# camp, task, assignee, created by, due in days (None = no date), done
 TASKS = [
-    (0, "Trimite oferta pentru tabăra de la munte", "seller", "founder", 2, False),
-    (1, "Sună din nou", "seller", "seller", -1, False),
-    (2, "Pregătește oferta de grup pentru 28 de elevi", "seller", "founder", 5, False),
-    (5, "Discuție cu HR despre program și transport", "founder", "founder", 1, False),
-    (5, "Trimite prezentarea taberelor", "founder", "founder", -3, True),
-    (7, "Verifică dacă închirierea echipamentului e inclusă", "founder", "seller", 3, False),
+    ("vara2027", "Rezervă cazarea la Bran pentru seria 1", "founder", "founder", 5, False),
+    ("vara2027", "Trimite părinților lista de bagaje", "seller", "founder", 2, False),
+    ("vara2026", "Trimite părinților pozele din tabără", "seller", "founder", -1, False),
+    ("vara2026", "Facturează avansurile", "founder", "founder", -20, True),
+    ("iarna2027", "Confirmă instructorii de schi", "founder", "seller", 10, False),
+    (
+        "iarna2027",
+        "Sună părinții de anul trecut pentru tabăra de iarnă",
+        "seller",
+        "founder",
+        3,
+        False,
+    ),
 ]
 
 
@@ -165,10 +183,21 @@ class Command(BaseCommand):
             if not reset:
                 raise CommandError("Demo data already exists. Use --reset to recreate it.")
             demo.delete()
+            demo_camps = Camp.objects.filter(name__in=[name for name, *_ in CAMPS.values()])
+            Task.objects.filter(camp__in=demo_camps, title__in=[t[1] for t in TASKS]).delete()
+            demo_camps.filter(opportunities__isnull=True, tasks__isnull=True).delete()
 
         people = {"founder": self.member_of(FOUNDER), "seller": self.member_of(SELLER)}
         now = timezone.now()
         today = timezone.localdate()
+
+        camps = {
+            key: Camp.objects.get_or_create(
+                name=name,
+                defaults={"start_date": start, "end_date": end, "location": location},
+            )[0]
+            for key, (name, start, end, location) in CAMPS.items()
+        }
 
         contacts = [
             Contact.objects.create(
@@ -182,17 +211,28 @@ class Command(BaseCommand):
         ]
 
         opportunities = []
-        for contact_index, title, status, owner, days_ago, notes in OPPORTUNITIES:
+        for index, (contact_index, title, status, owner, days_ago, notes) in enumerate(
+            OPPORTUNITIES
+        ):
+            camp = camps[WON_CAMPS[index]] if index in WON_CAMPS else None
             opportunity = Opportunity.objects.create(
                 contact=contacts[contact_index],
                 title=title,
                 status=status,
+                camp=camp,
                 owner=people[owner],
                 created_by=people[owner],
             )
             when = now - timedelta(days=days_ago)
             for offset, (author, text) in enumerate(reversed(notes)):
-                note = opportunity.notes.create(author=people[author], text=text)
+                # For won / lost opportunities the latest note is the closing status change.
+                closing = offset == 0 and status in (Status.WON, Status.LOST)
+                change = f"În lucru → {Status(status).label}" if closing else ""
+                if closing and camp:
+                    change += f" · {camp.name}"
+                note = opportunity.notes.create(
+                    author=people[author], text=text, status_change=change
+                )
                 Note.objects.filter(pk=note.pk).update(
                     created_at=when - timedelta(hours=offset * 5)
                 )
@@ -202,9 +242,9 @@ class Command(BaseCommand):
             )
             opportunities.append(opportunity)
 
-        for index, title, assignee, creator, due_in, done in TASKS:
+        for camp_key, title, assignee, creator, due_in, done in TASKS:
             Task.objects.create(
-                opportunity=opportunities[index],
+                camp=camps[camp_key],
                 title=title,
                 assigned_to=people[assignee],
                 created_by=people[creator],
@@ -216,7 +256,7 @@ class Command(BaseCommand):
         note_count = Note.objects.filter(opportunity__in=opportunities).count()
         self.stdout.write(
             f"Created {len(contacts)} contacts, {len(opportunities)} opportunities, "
-            f"{note_count} notes, {len(TASKS)} tasks."
+            f"{note_count} notes, {len(TASKS)} tasks; {len(camps)} camps."
         )
 
     def member_of(self, role):

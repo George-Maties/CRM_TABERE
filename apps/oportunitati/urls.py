@@ -12,6 +12,4 @@ urlpatterns = [
     path("<int:pk>/sterge/", views.OpportunityDeleteView.as_view(), name="delete"),
     path("<int:pk>/status/", views.StatusUpdateView.as_view(), name="status"),
     path("<int:pk>/note/", views.NoteCreateView.as_view(), name="note"),
-    path("<int:pk>/sarcini/", views.TaskCreateView.as_view(), name="task"),
-    path("sarcini/<int:pk>/gata/", views.TaskToggleView.as_view(), name="task-toggle"),
 ]

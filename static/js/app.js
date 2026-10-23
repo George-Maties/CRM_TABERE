@@ -65,6 +65,19 @@
     });
   });
 
+  // [data-show-if="fieldId=value"]: show the block only while that field has that value
+  // (without JavaScript every block stays visible, so the form still works)
+  document.querySelectorAll("[data-show-if]").forEach(function (block) {
+    var rule = block.dataset.showIf.split("=");
+    var field = document.getElementById(rule[0]);
+    if (!field) return;
+    function sync() {
+      block.hidden = field.value !== rule[1];
+    }
+    field.addEventListener("change", sync);
+    sync();
+  });
+
   // form[data-loading-text]: show progress on the submit button once the request starts
   document.querySelectorAll("form[data-loading-text]").forEach(function (form) {
     var button = form.querySelector('[type="submit"]');

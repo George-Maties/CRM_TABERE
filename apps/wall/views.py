@@ -1,6 +1,7 @@
 from django.views.generic import TemplateView
 
-from apps.oportunitati.models import Note, Opportunity, Task
+from apps.oportunitati.models import Note, Opportunity
+from apps.tabere.models import Task
 
 
 class WallView(TemplateView):
@@ -10,7 +11,7 @@ class WallView(TemplateView):
         user = self.request.user
         visible = Opportunity.objects.visible_to(user)
         my_tasks = Task.objects.filter(assigned_to=user, done=False).select_related(
-            "opportunity__contact", "created_by"
+            "camp", "created_by"
         )
         activity = (
             Note.objects.filter(opportunity__in=visible)

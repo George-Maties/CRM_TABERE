@@ -55,3 +55,9 @@ def test_contact_page_lists_only_visible_opportunities(
     response = seller_client.get(contact.get_absolute_url())
 
     assert list(response.context["opportunities"]) == [mine]
+
+
+def test_teacher_is_a_contact_kind(seller_client):
+    seller_client.post(reverse("contacte:create"), {"name": "Prof. Ana Vasile", "kind": "profesor"})
+
+    assert Contact.objects.get(name="Prof. Ana Vasile").get_kind_display() == "Profesor"

@@ -16,6 +16,7 @@ urlpatterns = [
     path("wall/", include("apps.wall.urls")),
     path("oportunitati/", include("apps.oportunitati.urls")),
     path("contacte/", include("apps.contacte.urls")),
+    path("tabere/", include("apps.tabere.urls")),
 ]
 
 if settings.DEBUG:

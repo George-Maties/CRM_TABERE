@@ -747,8 +747,17 @@ body {
   color: var(--app-ink);
 }
 
-.timeline-status .timeline-body {
-  font-size: 0.9375rem;
+.status-change {
+  font-weight: 600;
+}
+
+/* Camp fields under the status select (shown for "Câștigată") */
+.status-camp {
+  padding: 0.875rem 0.875rem 0.125rem;
+  margin-bottom: 1rem;
+  background-color: var(--app-bg);
+  border: 1px solid var(--app-border);
+  border-radius: var(--bs-border-radius);
 }
 
 .user-avatar-sm {

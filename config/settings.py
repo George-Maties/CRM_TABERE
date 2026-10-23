@@ -29,6 +29,7 @@ INSTALLED_APPS = [
     "apps.wall",
     "apps.oportunitati",
     "apps.contacte",
+    "apps.tabere",
 ]
 
 MIDDLEWARE = [

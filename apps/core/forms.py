@@ -1,6 +1,13 @@
 from django import forms
 
 
+class UserChoiceField(forms.ModelChoiceField):
+    """User select that shows names ("Ana Popescu") instead of usernames."""
+
+    def label_from_instance(self, obj):
+        return obj.get_full_name() or obj.get_username()
+
+
 class BootstrapFormMixin:
     """Adds Bootstrap classes to every widget, so templates can render fields as they are."""
 

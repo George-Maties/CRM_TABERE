@@ -1,7 +1,9 @@
 import pytest
 from django.urls import reverse
 
-from .models import Opportunity, Status, Task
+from apps.tabere.models import Camp
+
+from .models import Opportunity, Status
 
 
 def test_seller_sees_only_own_opportunities(seller_client, seller, other_seller, make_opportunity):
@@ -23,17 +25,6 @@ def test_seller_cannot_open_someone_elses_opportunity(
     assert response.status_code == 404
 
 
-def test_seller_sees_opportunity_where_they_have_a_task(
-    seller_client, seller, founder, make_opportunity
-):
-    theirs = make_opportunity(founder)
-    Task.objects.create(opportunity=theirs, title="Sună", assigned_to=seller, created_by=founder)
-
-    response = seller_client.get(theirs.get_absolute_url())
-
-    assert response.status_code == 200
-
-
 def test_founder_sees_all_opportunities(founder_client, seller, other_seller, make_opportunity):
     make_opportunity(seller)
     make_opportunity(other_seller)
@@ -51,13 +42,34 @@ def test_status_tabs_count_and_filter(founder_client, founder, make_opportunity)
     response = founder_client.get(reverse("oportunitati:list"), {"status": "sunat"})
 
     counts = {tab["value"]: tab["count"] for tab in response.context["status_tabs"]}
-    assert counts["sunat"] == 2 and counts["hotarat"] == 1
+    assert counts["sunat"] == 2 and counts["castigata"] == 1
     assert len(response.context["opportunity_list"]) == 2
 
 
+def test_create_form_offers_only_open_statuses(seller_client, contact):
+    form = seller_client.get(reverse("oportunitati:create"), {"contact": contact.pk}).context[
+        "form"
+    ]
+
+    assert "owner" not in form.fields
+    assert [value for value, _ in form.fields["status"].choices] == [
+        "nou",
+        "sunat",
+        "raspuns",
+        "in_lucru",
+    ]
+
+
+def test_create_with_status_needs_note(seller_client, contact):
+    response = seller_client.post(
+        reverse("oportunitati:create"),
+        {"contact": contact.pk, "title": "Tabăra de iarnă", "status": "sunat", "note": ""},
+    )
+
+    assert response.context["form"].errors["note"]
+
+
 def test_seller_creates_opportunity_from_contact(seller_client, seller, contact):
-    form = seller_client.get(reverse("oportunitati:create"), {"contact": contact.pk})
-    assert "owner" not in form.context["form"].fields
 
     response = seller_client.post(
         reverse("oportunitati:create"),
@@ -84,15 +96,97 @@ def test_founder_assigns_opportunity_to_seller(founder_client, seller, contact):
     assert Opportunity.objects.get(title="Grup școală").owner == seller
 
 
-def test_status_change_is_recorded_in_notes(seller_client, seller, make_opportunity):
+def _change_status(client, opportunity, **data):
+    return client.post(reverse("oportunitati:status", args=[opportunity.pk]), data)
+
+
+def test_status_change_is_recorded_with_comment(seller_client, seller, make_opportunity):
     opportunity = make_opportunity(seller)
 
-    seller_client.post(reverse("oportunitati:status", args=[opportunity.pk]), {"status": "hotarat"})
+    _change_status(seller_client, opportunity, status="sunat", comment="Revin joi.")
 
     opportunity.refresh_from_db()
-    assert opportunity.status == Status.WON
+    assert opportunity.status == Status.CALLED
     note = opportunity.notes.get()
-    assert note.is_status_change and note.text == "Nou → Hotărât"
+    assert note.status_change == "Nou → Sunat" and note.text == "Revin joi."
+
+
+def test_status_change_requires_comment(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    response = _change_status(seller_client, opportunity, status="pierduta", comment="")
+
+    assert response.context["status_form"].errors["comment"]
+    opportunity.refresh_from_db()
+    assert opportunity.status == Status.NEW
+
+
+def test_status_change_rejects_same_status(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    response = _change_status(seller_client, opportunity, status="nou", comment="Nimic nou.")
+
+    assert response.context["status_form"].errors["status"]
+
+
+def test_lost_records_the_reason(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    _change_status(seller_client, opportunity, status="pierduta", comment="Prea scump.")
+
+    note = opportunity.notes.get()
+    assert note.status_change == "Nou → Pierdută" and note.text == "Prea scump."
+
+
+def test_won_needs_a_camp(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    response = _change_status(seller_client, opportunity, status="castigata", comment="Da!")
+
+    assert response.context["status_form"].errors["camp_name"]
+    opportunity.refresh_from_db()
+    assert opportunity.status == Status.NEW
+
+
+def test_won_joins_existing_camp(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+
+    _change_status(
+        seller_client, opportunity, status="castigata", camp=camp.pk, comment="Avans plătit."
+    )
+
+    opportunity.refresh_from_db()
+    assert opportunity.status == Status.WON and opportunity.camp == camp
+    assert opportunity.notes.get().status_change == "Nou → Câștigată · Vară 2027"
+
+
+def test_won_creates_new_camp(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    _change_status(
+        seller_client,
+        opportunity,
+        status="castigata",
+        camp_name="Iarnă 2027",
+        camp_start="2027-02-10",
+        camp_end="2027-02-16",
+        comment="Confirmat.",
+    )
+
+    opportunity.refresh_from_db()
+    assert opportunity.camp.name == "Iarnă 2027"
+    assert opportunity.camp.created_by == seller
+
+
+def test_leaving_won_takes_contact_out_of_camp(seller_client, seller, make_opportunity):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+
+    _change_status(seller_client, opportunity, status="pierduta", comment="A renunțat.")
+
+    opportunity.refresh_from_db()
+    assert opportunity.camp is None
 
 
 def test_empty_note_shows_error(seller_client, seller, make_opportunity):
@@ -103,28 +197,6 @@ def test_empty_note_shows_error(seller_client, seller, make_opportunity):
     assert response.status_code == 200
     assert response.context["note_form"].errors
     assert not opportunity.notes.exists()
-
-
-def test_seller_assigns_task_to_founder(seller_client, seller, founder, make_opportunity):
-    opportunity = make_opportunity(seller)
-
-    seller_client.post(
-        reverse("oportunitati:task", args=[opportunity.pk]),
-        {"title": "Aprobă reducerea", "assigned_to": founder.pk, "due_date": "2027-01-15"},
-    )
-
-    task = opportunity.tasks.get()
-    assert task.assigned_to == founder and task.created_by == seller
-
-
-def test_task_toggle(seller_client, seller, make_opportunity):
-    opportunity = make_opportunity(seller)
-    task = Task.objects.create(opportunity=opportunity, title="Sună", assigned_to=seller)
-
-    seller_client.post(reverse("oportunitati:task-toggle", args=[task.pk]))
-
-    task.refresh_from_db()
-    assert task.done and task.done_at is not None
 
 
 def test_seller_cannot_delete_opportunity(seller_client, seller, make_opportunity):

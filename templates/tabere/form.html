@@ -1,0 +1,23 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}{% if object %}Editează {{ object.name }}{% else %}Tabără nouă{% endif %}{% endblock %}
+{% block page_title %}{% if object %}Editează tabăra{% else %}Tabără nouă{% endif %}{% endblock %}
+
+{% block page_content %}
+  <form class="card form-card" method="post" novalidate data-loading-text="Se salvează…">
+    <div class="card-body">
+      {% csrf_token %}
+      {% include "components/form_field.html" with field=form.name %}
+      <div class="row">
+        <div class="col-sm-6">{% include "components/form_field.html" with field=form.start_date %}</div>
+        <div class="col-sm-6">{% include "components/form_field.html" with field=form.end_date %}</div>
+      </div>
+      {% include "components/form_field.html" with field=form.location %}
+      {% include "components/form_field.html" with field=form.notes %}
+      <div class="form-actions">
+        <button type="submit" class="btn btn-primary">{% if object %}Salvează modificările{% else %}Creează tabăra{% endif %}</button>
+        <a class="btn btn-link" href="{% if object %}{{ object.get_absolute_url }}{% else %}{% url 'tabere:list' %}{% endif %}">Renunță</a>
+      </div>
+    </div>
+  </form>
+{% endblock %}
