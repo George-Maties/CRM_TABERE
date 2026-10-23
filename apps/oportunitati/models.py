@@ -8,15 +8,10 @@ from apps.tabere.models import Camp
 
 
 class Status(models.TextChoices):
-    NEW = "nou", "Nou"
-    CALLED = "sunat", "Sunat"
-    ANSWERED = "raspuns", "Răspuns"
-    IN_PROGRESS = "in_lucru", "În lucru"
-    WON = "castigata", "Câștigată"
-    LOST = "pierduta", "Pierdută"
-
-
-OPEN_STATUSES = [Status.NEW, Status.CALLED, Status.ANSWERED, Status.IN_PROGRESS]
+    # Being worked on, from the first call until it is won or lost
+    POTENTIAL = "potential", "Potențial"
+    WON = "castigata", "Câștigat"
+    LOST = "pierduta", "Pierdut"
 
 
 class OpportunityQuerySet(models.QuerySet):
@@ -45,7 +40,9 @@ class Opportunity(models.Model):
     )
     # 1, 2, 3… per contact: "Ana Pop #2". Kept when other opportunities are deleted.
     number = models.PositiveIntegerField("nr.", editable=False)
-    status = models.CharField("status", max_length=20, choices=Status.choices, default=Status.NEW)
+    status = models.CharField(
+        "status", max_length=20, choices=Status.choices, default=Status.POTENTIAL
+    )
     # Set when the opportunity is won: the camp the contact goes to.
     camp = models.ForeignKey(
         Camp,
@@ -55,9 +52,11 @@ class Opportunity(models.Model):
         related_name="opportunities",
         verbose_name="tabără",
     )
+    # Empty only while the opportunity is lost: losing it takes it off the seller's list.
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.PROTECT,
+        null=True,
         related_name="opportunities",
         verbose_name="responsabil",
     )
@@ -107,9 +106,11 @@ class Opportunity(models.Model):
             return f"{self.contact.name} #{self.number}"
         return self.contact.name
 
-    def change_status(self, new_status, user, comment, camp=None):
-        """Set the status and record it, with the required comment, in the notes.
-        Winning needs the camp the contact joins; leaving "won" takes them out of it."""
+    def change_status(self, new_status, user, reason="", camp=None):
+        """Set the status and record the change in the history; a reason (required when
+        losing) goes in just before it, as an ordinary note.
+        Winning needs the camp the contact joins; leaving "won" takes them out of it.
+        Losing takes the seller off the opportunity; whoever reopens it becomes responsible."""
         if new_status == Status.WON and camp is None:
             raise ValueError("A won opportunity needs a camp.")
         change = f"{self.get_status_display()} → {Status(new_status).label}"
@@ -117,8 +118,14 @@ class Opportunity(models.Model):
         self.camp = camp if new_status == Status.WON else None
         if self.camp:
             change += f" · {self.camp.name}"
-        self.save(update_fields=["status", "camp", "updated_at"])
-        self.notes.create(author=user, status_change=change, text=comment)
+        if new_status == Status.LOST:
+            self.owner = None
+        elif self.owner is None:
+            self.owner = user
+        self.save(update_fields=["status", "camp", "owner", "updated_at"])
+        if reason:
+            self.notes.create(author=user, text=reason)
+        self.notes.create(author=user, status_change=change, new_status=new_status)
 
     def touch(self):
         """Mark the opportunity as just updated (new note)."""
@@ -136,15 +143,17 @@ class Note(models.Model):
         related_name="+",
         verbose_name="autor",
     )
-    text = models.TextField("notă")
-    # "Nou → Sunat" when the note records a status change; its text is the required comment.
+    # Empty for a status change, which is its own entry in the history.
+    text = models.TextField("notă", blank=True)
+    # "Potențial → Pierdut" when the entry records a status change, and the status it led to.
     status_change = models.CharField("schimbare de status", max_length=300, blank=True)
+    new_status = models.CharField("status nou", max_length=20, choices=Status.choices, blank=True)
     created_at = models.DateTimeField("scrisă la", auto_now_add=True)
 
     class Meta:
-        ordering = ["-created_at"]
+        ordering = ["-created_at", "-pk"]
         verbose_name = "notă"
         verbose_name_plural = "note"
 
     def __str__(self):
-        return self.text[:60]
+        return self.status_change or self.text[:60]

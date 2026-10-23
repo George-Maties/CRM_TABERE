@@ -40,18 +40,10 @@
           {% if notes %}
             <ol class="timeline">
               {% for note in notes %}
-                <li class="timeline-item">
-                  <span class="user-avatar user-avatar-sm" aria-hidden="true">{{ note.author|initials }}</span>
-                  <div class="timeline-body">
-                    <div class="timeline-meta">
-                      <strong>{{ note.author|display_name }}</strong>
-                      {% if note.status_change %}a schimbat statusul{% endif %}
-                      <time datetime="{{ note.created_at|date:'c' }}" title="{{ note.created_at|date:'j F Y, H:i'|lower }}">{{ note.created_at|naturaltime }}</time>
-                    </div>
-                    {% if note.status_change %}<div class="status-change">{{ note.status_change }}</div>{% endif %}
-                    {% if note.text %}<div class="text-prewrap">{{ note.text }}</div>{% endif %}
-                  </div>
-                </li>
+                {% ifchanged note.created_at.date %}
+                  <li class="timeline-day"><span>{{ note.created_at|naturalday:"j F Y"|lower|capfirst }}</span></li>
+                {% endifchanged %}
+                {% include "components/history_item.html" with note=note %}
               {% endfor %}
             </ol>
           {% else %}
@@ -69,20 +61,19 @@
             <form method="post" action="{% url 'oportunitati:status' opportunity.pk %}" novalidate data-loading-text="Se salvează…">
               {% csrf_token %}
               {% include "components/form_field.html" with field=status_form.status %}
-              {# Won: the contact joins a camp, existing or new. Shown only for "Câștigată". #}
+              {# Won: the contact joins an existing camp. Shown only for "Câștigat". #}
               <div class="status-camp" data-show-if="{{ status_form.status.id_for_label }}=castigata">
                 {% include "components/form_field.html" with field=status_form.camp %}
-                {% if status_form.camp_name %}
-                  <div data-show-if="{{ status_form.camp.id_for_label }}=">
-                    {% include "components/form_field.html" with field=status_form.camp_name %}
-                    <div class="row">
-                      <div class="col-sm-6">{% include "components/form_field.html" with field=status_form.camp_start %}</div>
-                      <div class="col-sm-6">{% include "components/form_field.html" with field=status_form.camp_end %}</div>
-                    </div>
-                  </div>
+              </div>
+              {# Lost: the reason, saved as a note. Shown only for "Pierdut". #}
+              <div data-show-if="{{ status_form.status.id_for_label }}=pierduta">
+                {% include "components/form_field.html" with field=status_form.reason %}
+                {% if opportunity.owner %}
+                  <p class="form-text mt-n2 mb-3">
+                    <i class="bi bi-info-circle me-1" aria-hidden="true"></i>Oportunitatea rămâne fără responsabil ({{ opportunity.owner|display_name }}).
+                  </p>
                 {% endif %}
               </div>
-              {% include "components/form_field.html" with field=status_form.comment %}
               <button type="submit" class="btn btn-primary btn-sm">Salvează statusul</button>
             </form>
           </div>
@@ -98,7 +89,7 @@
               <dd><a href="{{ opportunity.camp.get_absolute_url }}">{{ opportunity.camp.name }}</a></dd>
             {% endif %}
             <dt>Responsabil</dt>
-            <dd>{{ opportunity.owner|display_name }}</dd>
+            <dd>{% if opportunity.owner %}{{ opportunity.owner|display_name }}{% else %}<span class="text-body-secondary">Nimeni (pierdut)</span>{% endif %}</dd>
             <dt>Creată</dt>
             <dd>{{ opportunity.created_at|date:"j F Y"|lower }}{% if opportunity.created_by %} de {{ opportunity.created_by|display_name }}{% endif %}</dd>
           </dl>

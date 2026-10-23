@@ -50,7 +50,7 @@ WON_CAMPS = {3: "vara2026", 8: "vara2026"}
 OPPORTUNITIES = [
     (
         0,
-        Status.IN_PROGRESS,
+        Status.POTENTIAL,
         "seller",
         1,
         [
@@ -66,7 +66,7 @@ OPPORTUNITIES = [
     ),
     (
         1,
-        Status.CALLED,
+        Status.POTENTIAL,
         "seller",
         2,
         [
@@ -75,7 +75,7 @@ OPPORTUNITIES = [
     ),
     (
         2,
-        Status.ANSWERED,
+        Status.POTENTIAL,
         "founder",
         3,
         [
@@ -94,10 +94,10 @@ OPPORTUNITIES = [
             ("seller", "A confirmat pentru seria 2. Avansul a fost plătit."),
         ],
     ),
-    (4, Status.NEW, "founder", 0, []),
+    (4, Status.POTENTIAL, "founder", 0, []),
     (
         5,
-        Status.IN_PROGRESS,
+        Status.POTENTIAL,
         "founder",
         1,
         [
@@ -118,7 +118,7 @@ OPPORTUNITIES = [
     ),
     (
         7,
-        Status.ANSWERED,
+        Status.POTENTIAL,
         "seller",
         4,
         [
@@ -137,7 +137,7 @@ OPPORTUNITIES = [
             ("seller", "Confirmat. Copilul a mai fost la noi și anul trecut."),
         ],
     ),
-    (9, Status.NEW, "seller", 0, []),
+    (9, Status.POTENTIAL, "seller", 0, []),
 ]
 
 # camp, task, assignee, created by, due in days (None = no date), done
@@ -209,21 +209,26 @@ class Command(BaseCommand):
                 contact=contacts[contact_index],
                 status=status,
                 camp=camp,
-                owner=people[owner],
+                # Losing an opportunity takes the seller off it.
+                owner=None if status == Status.LOST else people[owner],
                 created_by=people[owner],
             )
             when = now - timedelta(days=days_ago)
-            for offset, (author, text) in enumerate(reversed(notes)):
-                # For won / lost opportunities the latest note is the closing status change.
-                closing = offset == 0 and status in (Status.WON, Status.LOST)
-                change = f"În lucru → {Status(status).label}" if closing else ""
-                if closing and camp:
+            last_note_at = when
+            if status in (Status.WON, Status.LOST):
+                # Won / lost opportunities end with the status change, right after the last note.
+                change = f"Potențial → {Status(status).label}"
+                if camp:
                     change += f" · {camp.name}"
-                note = opportunity.notes.create(
-                    author=people[author], text=text, status_change=change
+                closing = opportunity.notes.create(
+                    author=people[notes[-1][0]], status_change=change, new_status=status
                 )
+                Note.objects.filter(pk=closing.pk).update(created_at=when)
+                last_note_at = when - timedelta(minutes=1)
+            for offset, (author, text) in enumerate(reversed(notes)):
+                note = opportunity.notes.create(author=people[author], text=text)
                 Note.objects.filter(pk=note.pk).update(
-                    created_at=when - timedelta(hours=offset * 5)
+                    created_at=last_note_at - timedelta(hours=offset * 5)
                 )
             # Timestamps are set after saving: auto_now fields ignore values passed to create().
             Opportunity.objects.filter(pk=opportunity.pk).update(
@@ -232,7 +237,7 @@ class Command(BaseCommand):
             opportunities.append(opportunity)
             # A contact belongs to the seller of its first opportunity; the rest stay unassigned.
             contact = opportunity.contact
-            if not contact.assignees.exists():
+            if opportunity.owner and not contact.assignees.exists():
                 contact.assignees.add(opportunity.owner)
 
         for camp_key, title, assignee, creator, due_in, done in TASKS:

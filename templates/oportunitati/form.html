@@ -8,10 +8,7 @@
     <div class="card-body">
       {% csrf_token %}
       {% include "components/form_field.html" with field=form.contact %}
-      <div class="row">
-        {% if form.status %}<div class="col-sm-6">{% include "components/form_field.html" with field=form.status %}</div>{% endif %}
-        {% if form.owner %}<div class="col-sm-6">{% include "components/form_field.html" with field=form.owner %}</div>{% endif %}
-      </div>
+      {% if form.owner %}{% include "components/form_field.html" with field=form.owner %}{% endif %}
       {% if form.note %}{% include "components/form_field.html" with field=form.note %}{% endif %}
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">{% if object %}Salvează modificările{% else %}Creează oportunitatea{% endif %}</button>

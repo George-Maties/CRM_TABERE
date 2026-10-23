@@ -31,6 +31,7 @@
       </div>
     {% endif %}
     <button class="btn btn-outline-secondary" type="submit">Caută</button>
+    {% if query or mine %}<a class="btn btn-link" href="{% url 'oportunitati:list' %}{% if status %}?status={{ status }}{% endif %}">Resetează</a>{% endif %}
   </form>
 
   <nav class="status-tabs" aria-label="Filtrează după status">

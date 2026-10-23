@@ -940,36 +940,105 @@ body {
   border-bottom: 1px solid var(--app-border);
 }
 
+/* Vertical history: a marker per entry on a rail (initials for a note, the new status's
+   icon and color for a status change); notes sit in a bubble, days are labels on the rail. */
 .timeline {
+  --timeline-marker: 2rem;
+  --timeline-gap: 0.875rem;
   padding: 0;
   margin: 0;
   list-style: none;
 }
 
-.timeline-item {
-  display: flex;
-  gap: 0.75rem;
+.timeline-compact {
+  --timeline-marker: 1.75rem;
+  --timeline-gap: 0.75rem;
+}
+
+.timeline-item,
+.timeline-day {
+  position: relative;
   padding-bottom: 1.25rem;
 }
 
-.timeline-item:last-child {
-  padding-bottom: 0;
+.timeline-item {
+  display: flex;
+  gap: var(--timeline-gap);
 }
 
 .timeline-compact .timeline-item {
   padding-bottom: 1rem;
 }
 
+/* The rail, from under each marker down to the next entry */
+.timeline-item::before,
+.timeline-day::before {
+  position: absolute;
+  top: var(--timeline-marker);
+  bottom: 0;
+  left: calc(var(--timeline-marker) / 2 - 1px);
+  width: 2px;
+  content: "";
+  background-color: var(--app-border);
+}
+
+.timeline-day::before {
+  top: 0;
+}
+
+.timeline-day:first-child::before {
+  top: 50%;
+}
+
+.timeline > :last-child {
+  padding-bottom: 0;
+}
+
+.timeline > :last-child::before {
+  display: none;
+}
+
+.timeline-marker {
+  position: relative;
+  z-index: 1;
+  display: inline-flex;
+  flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: var(--timeline-marker);
+  height: var(--timeline-marker);
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--app-accent);
+  background-color: var(--app-accent-subtle);
+  border-radius: 50%;
+  box-shadow: 0 0 0 4px var(--app-surface);
+}
+
+.timeline-day span {
+  position: relative;
+  z-index: 1;
+  display: inline-block;
+  padding: 0.125rem 0.625rem;
+  font-size: 0.75rem;
+  font-weight: 600;
+  color: var(--app-muted);
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: 50rem;
+}
+
 .timeline-body {
   flex: 1;
   min-width: 0;
+  /* First line centered on the marker */
+  padding-top: calc((var(--timeline-marker) - 1.3125rem) / 2);
 }
 
 .timeline-meta {
   display: flex;
   flex-wrap: wrap;
   gap: 0.25rem 0.5rem;
-  margin-bottom: 0.125rem;
   font-size: 0.875rem;
   color: var(--app-muted);
 }
@@ -978,24 +1047,25 @@ body {
   color: var(--app-ink);
 }
 
+.timeline-note {
+  padding: 0.625rem 0.875rem;
+  margin-top: 0.375rem;
+  background-color: var(--app-bg);
+  border: 1px solid var(--app-border);
+  border-radius: 0 var(--bs-border-radius) var(--bs-border-radius);
+}
+
 .status-change {
   font-weight: 600;
 }
 
-/* Camp fields under the status select (shown for "Câștigată") */
+/* Camp field under the status select (shown for "Câștigat") */
 .status-camp {
   padding: 0.875rem 0.875rem 0.125rem;
   margin-bottom: 1rem;
   background-color: var(--app-bg);
   border: 1px solid var(--app-border);
   border-radius: var(--bs-border-radius);
-}
-
-.user-avatar-sm {
-  flex-shrink: 0;
-  width: 1.875rem;
-  height: 1.875rem;
-  font-size: 0.75rem;
 }
 
 /* ---- Tasks ---- */

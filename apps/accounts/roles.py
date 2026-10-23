@@ -21,7 +21,6 @@ _SELLER_PERMISSIONS = [
     "oportunitati.change_opportunity",
     "oportunitati.view_note",
     "oportunitati.add_note",
-    # Winning an opportunity can create the camp the contact joins.
     "tabere.view_camp",
     "tabere.add_camp",
     "tabere.view_task",

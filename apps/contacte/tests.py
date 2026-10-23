@@ -108,6 +108,21 @@ def test_founder_sees_all_contacts_and_filters_unassigned(founder_client, seller
     assert [c.name for c in sellers.context["contact_list"]] == ["Mihai Popa"]
 
 
+def test_founder_filters_own_contacts(founder_client, founder, seller, contact, make_opportunity):
+    assigned = Contact.objects.create(name="Al Paulei")
+    assigned.assignees.add(founder)
+    Contact.objects.create(name="Al Vilmei").assignees.add(seller)
+    make_opportunity(founder)
+
+    response = founder_client.get(reverse("contacte:list"), {"ale_mele": "1"})
+
+    assert list(response.context["contact_list"]) == [assigned, contact]
+
+
+def test_seller_has_no_mine_switch(seller_client):
+    assert "ale-mele" not in seller_client.get(reverse("contacte:list")).content.decode()
+
+
 def test_founder_assigns_contacts_in_bulk(founder_client, founder, seller, contact):
     other = Contact.objects.create(name="Mihai Popa")
     opportunity = Opportunity.objects.create(contact=contact, owner=founder)

@@ -1,0 +1,39 @@
+{% comment %}
+  Usage, inside <ol class="timeline">:
+    {% include "components/history_item.html" with note=note %}
+  One entry of an opportunity's history: a note (author's initials and the text) or a
+  status change (colored icon of the new status).
+  Optional: compact=True (one line of text, relative time, link to the opportunity; for the wall).
+{% endcomment %}
+{% load humanize ui opportunity_tags %}
+{% with color=note.new_status|status_color %}
+  <li class="timeline-item{% if note.status_change %} timeline-event{% endif %}">
+    {% if note.status_change %}
+      <span class="timeline-marker bg-{{ color }}-subtle text-{{ color }}-emphasis border border-{{ color }}-subtle" aria-hidden="true">
+        <i class="bi bi-{{ note.new_status|status_icon }}"></i>
+      </span>
+    {% else %}
+      <span class="timeline-marker" aria-hidden="true">{{ note.author|initials }}</span>
+    {% endif %}
+    <div class="timeline-body">
+      <div class="timeline-meta">
+        <strong>{{ note.author|display_name }}</strong>
+        {% if note.status_change %}<span>a schimbat statusul</span>{% elif compact %}<span>a scris o notă</span>{% endif %}
+        <time datetime="{{ note.created_at|date:'c' }}" title="{{ note.created_at|date:'j F Y, H:i'|lower }}">{% if compact %}{{ note.created_at|naturaltime }}{% else %}{{ note.created_at|time:"H:i" }}{% endif %}</time>
+      </div>
+      {% if compact %}
+        <a class="d-block text-truncate" href="{{ note.opportunity.get_absolute_url }}#istoric">{{ note.opportunity.title }}</a>
+      {% endif %}
+      {% if note.status_change %}
+        <div class="status-change text-{{ color }}-emphasis{% if compact %} small text-truncate{% endif %}">{{ note.status_change }}</div>
+      {% endif %}
+      {% if note.text %}
+        {% if compact %}
+          <div class="text-body-secondary small text-truncate">{{ note.text }}</div>
+        {% else %}
+          <div class="timeline-note text-prewrap">{{ note.text }}</div>
+        {% endif %}
+      {% endif %}
+    </div>
+  </li>
+{% endwith %}

@@ -39,6 +39,7 @@ class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
         self.query = self.request.GET.get("q", "").strip()
         self.kind = self.request.GET.get("tip", "")
         self.assignee = self.request.GET.get("atribuit", "")
+        self.mine = self.request.GET.get("ale_mele") == "1"
         if self.query:
             contacts = contacts.filter(
                 Q(name__icontains=self.query)
@@ -47,6 +48,8 @@ class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
             )
         if self.kind in Contact.Kind.values:
             contacts = contacts.filter(kind=self.kind)
+        if self.mine:
+            contacts = contacts.mine(self.request.user)
         if self.assignee == UNASSIGNED:
             contacts = contacts.filter(assignees__isnull=True)
         elif self.assignee.isdigit():
@@ -60,6 +63,7 @@ class ContactListView(PermissionRequiredMixin, VisibleContactMixin, ListView):
             "kind": self.kind,
             "kinds": Contact.Kind.choices,
             "assignee": self.assignee,
+            "mine": self.mine,
             "unassigned": UNASSIGNED,
             "can_see_all": user.has_perm("contacte.view_all_contacts"),
         }

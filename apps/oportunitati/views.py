@@ -160,6 +160,9 @@ class StatusUpdateView(OpportunityActionView):
         if camp:
             message += f" Contactul {opportunity.contact.name} a fost adăugat la „{camp.name}”."
         messages.success(request, message)
+        # A seller who loses an opportunity is taken off it, so they can't open it any more.
+        if not Opportunity.objects.visible_to(request.user).filter(pk=opportunity.pk).exists():
+            return redirect("oportunitati:list")
         return redirect(opportunity)
 
 

@@ -39,6 +39,6 @@
     </div>
   {% else %}
     {% url 'tabere:create' as create_url %}
-    {% include "components/empty_state.html" with icon="bi-backpack" text="Nu există încă nicio tabără. Se creează de aici sau când o oportunitate devine „Câștigată”." action_url=create_url action_label="Adaugă tabără" %}
+    {% include "components/empty_state.html" with icon="bi-backpack" text="Nu există încă nicio tabără. Adăugați una ca să puteți marca oportunitățile drept „Câștigat”." action_url=create_url action_label="Adaugă tabără" %}
   {% endif %}
 {% endblock %}

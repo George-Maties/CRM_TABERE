@@ -31,19 +31,7 @@
           {% if activity %}
             <ol class="timeline timeline-compact">
               {% for note in activity %}
-                <li class="timeline-item">
-                  <span class="user-avatar user-avatar-sm" aria-hidden="true">{{ note.author|initials }}</span>
-                  <div class="timeline-body">
-                    <div class="timeline-meta">
-                      <strong>{{ note.author|display_name }}</strong>
-                      {% if note.status_change %}a schimbat statusul{% else %}a scris o notă{% endif %}
-                      <time datetime="{{ note.created_at|date:'c' }}" title="{{ note.created_at|date:'j F Y, H:i'|lower }}">{{ note.created_at|naturaltime }}</time>
-                    </div>
-                    <a class="d-block text-truncate" href="{{ note.opportunity.get_absolute_url }}#istoric">{{ note.opportunity.title }}</a>
-                    {% if note.status_change %}<div class="small status-change text-truncate">{{ note.status_change }}</div>{% endif %}
-                    {% if note.text %}<div class="text-body-secondary small text-truncate">{{ note.text }}</div>{% endif %}
-                  </div>
-                </li>
+                {% include "components/history_item.html" with note=note compact=True %}
               {% endfor %}
             </ol>
           {% else %}

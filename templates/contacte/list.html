@@ -37,9 +37,13 @@
           <option value="{{ member.pk }}"{% if assignee == member.pk|stringformat:"d" %} selected{% endif %}>{{ member|display_name }}</option>
         {% endfor %}
       </select>
+      <div class="form-check form-switch mb-0">
+        <input class="form-check-input" type="checkbox" role="switch" id="ale-mele" name="ale_mele" value="1"{% if mine %} checked{% endif %} data-auto-submit>
+        <label class="form-check-label" for="ale-mele">Doar ale mele</label>
+      </div>
     {% endif %}
     <button class="btn btn-outline-secondary" type="submit">Caută</button>
-    {% if query or kind or assignee %}<a class="btn btn-link" href="{% url 'contacte:list' %}">Resetează</a>{% endif %}
+    {% if query or kind or assignee or mine %}<a class="btn btn-link" href="{% url 'contacte:list' %}">Resetează</a>{% endif %}
   </form>
 
   {% if contact_list %}
@@ -86,7 +90,7 @@
     </div>
     {% if assignable %}</form>{% endif %}
     {% include "components/pagination.html" %}
-  {% elif query or kind or assignee %}
+  {% elif query or kind or assignee or mine %}
     {% include "components/empty_state.html" with icon="bi-search" text="Niciun contact nu corespunde căutării." %}
   {% elif can_see_all %}
     {% url 'contacte:create' as create_url %}
