@@ -24,6 +24,7 @@ class TaskAdmin(admin.ModelAdmin):
 @admin.register(Child)
 class ChildAdmin(admin.ModelAdmin):
     list_display = ["name", "age", "city", "opportunity"]
+    autocomplete_fields = ["opportunity"]
     search_fields = ["name", "opportunity__contact__name"]
 
 

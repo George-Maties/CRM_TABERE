@@ -46,6 +46,10 @@ MIDDLEWARE = [
     "django.middleware.clickjacking.XFrameOptionsMiddleware",
 ]
 
+if DEBUG:
+    # Logs the SQL queries and time of every page (apps/core/middleware.py).
+    MIDDLEWARE.append("apps.core.middleware.QueryStatsMiddleware")
+
 ROOT_URLCONF = "config.urls"
 
 TEMPLATES = [

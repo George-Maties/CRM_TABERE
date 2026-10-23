@@ -287,3 +287,25 @@ def test_seller_edit_keeps_assignee(seller_client, seller, contact):
     contact.refresh_from_db()
     assert contact.name == "Ana Pop-Ionescu"
     assert list(contact.assignees.all()) == [seller]
+
+
+def test_autocomplete_finds_visible_contacts_by_name_or_phone(seller_client, seller, other_seller):
+    mine = Contact.objects.create(name="Ana Pop", phone="0712 345 678")
+    mine.assignees.add(seller)
+    Contact.objects.create(name="Ana Popa").assignees.add(other_seller)
+
+    by_name = seller_client.get(reverse("contacte:autocomplete"), {"q": "ana"}).json()
+    by_phone = seller_client.get(reverse("contacte:autocomplete"), {"q": "345"}).json()
+
+    assert by_name == {
+        "results": [{"id": mine.pk, "label": "Ana Pop", "detail": "Părinte · 0712 345 678"}]
+    }
+    assert [r["id"] for r in by_phone["results"]] == [mine.pk]
+
+
+def test_autocomplete_returns_at_most_20(founder_client):
+    Contact.objects.bulk_create(Contact(name=f"Ion {number:02d}") for number in range(30))
+
+    results = founder_client.get(reverse("contacte:autocomplete")).json()["results"]
+
+    assert len(results) == 20 and results[0]["label"] == "Ion 00"

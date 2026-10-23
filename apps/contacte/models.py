@@ -1,3 +1,4 @@
+from django.apps import apps
 from django.conf import settings
 from django.db import models
 from django.db.models import Q
@@ -10,8 +11,13 @@ class ContactQuerySet(models.QuerySet):
         user, plus those of their own opportunities (so an opportunity never links to a 404)."""
         if user.has_perm("contacte.view_all_contacts"):
             return self
-        mine = self.model.objects.filter(Q(assignees=user) | Q(opportunities__owner=user))
-        return self.filter(pk__in=mine.values("pk"))
+        # Two lookups the indexes answer directly (assignments by user, opportunities by
+        # owner), instead of joining the three tables.
+        assigned = self.model.assignees.through.objects.filter(user=user).values("contact_id")
+        # Looked up by name: opportunities depend on contacts, not the other way round.
+        opportunity = apps.get_model("oportunitati", "Opportunity")
+        with_opportunity = opportunity.objects.filter(owner=user)
+        return self.filter(Q(pk__in=assigned) | Q(pk__in=with_opportunity.values("contact_id")))
 
     def assign(self, users):
         """Make `users` the people who work these contacts, in place of whoever did.
@@ -59,6 +65,10 @@ class Contact(models.Model):
 
     class Meta:
         ordering = ["name"]
+        indexes = [
+            models.Index(fields=["name"], name="contact_name"),
+            models.Index(fields=["kind", "name"], name="contact_kind_name"),
+        ]
         verbose_name = "contact"
         verbose_name_plural = "contacte"
         permissions = [

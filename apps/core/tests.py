@@ -71,3 +71,27 @@ def test_messages_show_as_notifications(seller_client):
     assert "Contactul „Elena Stan” a fost adăugat." in html
     # Blueprints for notify() in JavaScript, one per type
     assert html.count("data-notification-template=") == 4
+
+
+def test_seed_load_fills_camps_and_removes_everything_again(founder, seller):
+    from django.core.management import call_command
+
+    from apps.contacte.models import Contact
+    from apps.oportunitati.models import Opportunity, Status
+    from apps.tabere.models import Camp, Child
+
+    existing = Contact.objects.create(name="Contact real")
+    out = open("/dev/null", "w")
+    call_command("seed_load", contacts=60, camps=4, participants=5, here=True, stdout=out)
+
+    camps = Camp.objects.exclude(name="")
+    assert camps.count() == 4
+    for camp in camps:
+        assert camp.opportunities.filter(status=Status.WON).count() == 5
+    assert Child.objects.exists()
+    assert Opportunity.objects.filter(status=Status.POTENTIAL).exists()
+
+    call_command("seed_load", remove=True, stdout=out)
+
+    assert list(Contact.objects.all()) == [existing]
+    assert not Camp.objects.exists() and not Opportunity.objects.exists()

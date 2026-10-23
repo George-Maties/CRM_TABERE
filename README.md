@@ -55,6 +55,22 @@ python manage.py seed_demo --reset    # le recreează (șterge doar contactele c
 
 Rolurile se atribuie din Administrare → Utilizatori → grupuri. Rolurile noi se creează tot acolo, ca grupuri cu permisiunile bifate. Definițiile rolurilor de bază sunt în `apps/accounts/roles.py`.
 
+### Test de volum
+
+Într-o bază separată (numele trebuie să se termine în `_load`; comanda refuză altfel), cu câțiva utilizatori Fondator / Vânzător creați înainte:
+
+```bash
+createdb crm_tabere_load
+DB_NAME=crm_tabere_load python manage.py migrate
+DB_NAME=crm_tabere_load python manage.py setup_roles
+DB_NAME=crm_tabere_load python manage.py seed_load --contacts 10000   # oportunități, note, copii, sarcini
+DB_NAME=crm_tabere_load python manage.py runserver
+```
+
+Ca să vedeți volumul chiar în baza de lucru: `python manage.py seed_load --here --contacts 5000 --camps 100 --participants 25`. Totul se scoate apoi cu `python manage.py seed_load --remove` (contactele cu email `@volum.example.ro` și taberele marcate „Date de test…”).
+
+Cu `DEBUG=True`, fiecare pagină scrie în consolă câte interogări SQL a făcut și cât a durat („GET /contacte/ 200 · 9 queries, 14 ms SQL, 61 ms total”); peste 30 de interogări apare ca avertisment. Testele din `apps/core/test_queries.py` verifică că listele fac un număr fix de interogări, oricâte rânduri au.
+
 ### Comenzi utile
 
 ```bash

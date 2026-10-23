@@ -4,6 +4,7 @@ from django.db.models import Q
 from apps.accounts.roles import FOUNDER, team_members
 from apps.contacte.models import Contact
 from apps.core.forms import BootstrapFormMixin, UserChoiceField
+from apps.core.widgets import AutocompleteSelect
 from apps.tabere.forms import TaskForm as CampTaskForm
 from apps.tabere.models import Camp
 
@@ -24,10 +25,20 @@ class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
         model = Opportunity
         fields = ["contact", "owner"]
         field_classes = {"owner": UserChoiceField}
+        # Thousands of contacts: chosen by typing, not from a <select> listing them all
+        widgets = {
+            "contact": AutocompleteSelect(
+                "contacte:autocomplete", placeholder="Scrieți numele sau telefonul…"
+            )
+        }
 
     def __init__(self, *args, user, **kwargs):
         super().__init__(*args, **kwargs)
-        self.fields["contact"].queryset = Contact.objects.visible_to(user)
+        contacts = Contact.objects.visible_to(user)
+        self.fields["contact"].queryset = contacts
+        self.fields["contact"].widget.label = lambda pk: (
+            contacts.filter(pk=pk).values_list("name", flat=True).first() or ""
+        )
         self.fields["owner"].queryset = team_members()
         # Only roles that see every opportunity may hand one to someone else;
         # anyone else owns what they create, so it never disappears from their list.

@@ -440,3 +440,29 @@ def test_seller_cannot_add_or_toggle_tasks_on_someone_elses_opportunity(
     assert add.status_code == 404 and toggle.status_code == 404
     task.refresh_from_db()
     assert not task.done
+
+
+def test_contact_is_chosen_by_typing_not_from_a_list(founder_client, contact):
+    Contact = type(contact)
+    Contact.objects.bulk_create(Contact(name=f"Ion {number}") for number in range(50))
+
+    empty = founder_client.get(reverse("oportunitati:create")).content.decode()
+    chosen = founder_client.get(reverse("oportunitati:create"), {"contact": contact.pk})
+
+    # No <option> per contact: the page stays small however many contacts there are.
+    assert "Ion 49" not in empty
+    assert 'data-autocomplete="/contacte/cauta/"' in empty
+    html = chosen.content.decode()
+    assert f'name="contact" id="id_contact" value="{contact.pk}"' in html
+    assert 'value="Ana Pop"' in html
+
+
+def test_autocomplete_never_shows_a_contact_the_seller_cannot_see(
+    seller_client, other_seller, contact
+):
+    contact.assignees.add(other_seller)
+
+    response = seller_client.post(reverse("oportunitati:create"), {"contact": contact.pk})
+
+    assert response.context["form"].errors["contact"]
+    assert "Ana Pop" not in response.content.decode()

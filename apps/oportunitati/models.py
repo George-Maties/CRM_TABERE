@@ -92,6 +92,14 @@ class Opportunity(models.Model):
         verbose_name = "oportunitate"
         verbose_name_plural = "oportunități"
         permissions = [("view_all_opportunities", "Poate vedea toate oportunitățile")]
+        indexes = [
+            # The list: newest first, by status tab, and a seller's own
+            models.Index(fields=["-updated_at"], name="opportunity_updated"),
+            models.Index(fields=["status", "-updated_at"], name="opportunity_status_updated"),
+            models.Index(
+                fields=["owner", "status", "-updated_at"], name="opportunity_owner_updated"
+            ),
+        ]
         constraints = [
             models.UniqueConstraint(
                 fields=["contact", "number"], name="unique_opportunity_number_per_contact"
@@ -173,6 +181,8 @@ class Note(models.Model):
 
     class Meta:
         ordering = ["-created_at", "-pk"]
+        # The wall: the latest notes first
+        indexes = [models.Index(fields=["-created_at", "-id"], name="note_created")]
         verbose_name = "notă"
         verbose_name_plural = "note"
 

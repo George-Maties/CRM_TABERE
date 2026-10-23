@@ -288,4 +288,125 @@
     var field = event.target.querySelector("input:not([type=hidden]), select, textarea");
     if (field) field.focus();
   });
+
+  // [data-autocomplete="url"] (AutocompleteSelect in apps/core/widgets.py): choose one of many
+  // by typing. Matches come from the url (?q=), the chosen id goes in the hidden input.
+  // Arrows move through the list, Enter chooses, Escape closes.
+  document.querySelectorAll("[data-autocomplete]").forEach(function (box) {
+    var input = box.querySelector("[data-autocomplete-input]");
+    var value = box.querySelector("[data-autocomplete-value]");
+    var list = box.querySelector("[role=listbox]");
+    var timer;
+    var pending;
+    var active = -1;
+
+    function options() {
+      return list.querySelectorAll("[role=option]:not([aria-disabled])");
+    }
+
+    function close() {
+      list.hidden = true;
+      input.setAttribute("aria-expanded", "false");
+      input.removeAttribute("aria-activedescendant");
+      active = -1;
+    }
+
+    function highlight(index) {
+      var all = options();
+      if (!all.length) return;
+      active = (index + all.length) % all.length;
+      all.forEach(function (option, i) {
+        option.setAttribute("aria-selected", String(i === active));
+      });
+      input.setAttribute("aria-activedescendant", all[active].id);
+      all[active].scrollIntoView({ block: "nearest" });
+    }
+
+    function choose(option) {
+      value.value = option.dataset.value;
+      input.value = option.dataset.label;
+      close();
+    }
+
+    function show(results) {
+      list.innerHTML = "";
+      results.forEach(function (result, i) {
+        var option = document.createElement("li");
+        option.id = list.id + "-" + i;
+        option.setAttribute("role", "option");
+        option.setAttribute("aria-selected", "false");
+        option.dataset.value = result.id;
+        option.dataset.label = result.label;
+        var label = document.createElement("span");
+        label.className = "autocomplete-label";
+        label.textContent = result.label;
+        option.appendChild(label);
+        if (result.detail) {
+          var detail = document.createElement("span");
+          detail.className = "autocomplete-detail";
+          detail.textContent = result.detail;
+          option.appendChild(detail);
+        }
+        list.appendChild(option);
+      });
+      if (!results.length) {
+        var empty = document.createElement("li");
+        empty.setAttribute("role", "option");
+        empty.setAttribute("aria-disabled", "true");
+        empty.className = "autocomplete-empty";
+        empty.textContent = "Nimic găsit.";
+        list.appendChild(empty);
+      }
+      list.hidden = false;
+      input.setAttribute("aria-expanded", "true");
+      active = -1;
+    }
+
+    function search() {
+      if (pending) pending.abort();
+      pending = new AbortController();
+      var url = box.dataset.autocomplete + "?q=" + encodeURIComponent(input.value.trim());
+      fetch(url, { signal: pending.signal, headers: { Accept: "application/json" } })
+        .then(function (response) {
+          return response.json();
+        })
+        .then(function (data) {
+          if (document.activeElement === input) show(data.results);
+        })
+        .catch(function () {
+          // Aborted by a newer search, or offline: the box stays as it is.
+        });
+    }
+
+    input.addEventListener("input", function () {
+      // Typing again means the earlier choice no longer holds.
+      value.value = "";
+      clearTimeout(timer);
+      timer = setTimeout(search, 250);
+    });
+    input.addEventListener("focus", function () {
+      if (!value.value) search();
+    });
+    input.addEventListener("keydown", function (event) {
+      if (event.key === "ArrowDown" || event.key === "ArrowUp") {
+        event.preventDefault();
+        if (list.hidden) search();
+        else highlight(active + (event.key === "ArrowDown" ? 1 : -1));
+      } else if (event.key === "Enter" && !list.hidden && active >= 0) {
+        event.preventDefault();
+        choose(options()[active]);
+      } else if (event.key === "Escape" && !list.hidden) {
+        event.preventDefault();
+        close();
+      }
+    });
+    // mousedown, not click: it comes before the box loses focus and closes the list.
+    list.addEventListener("mousedown", function (event) {
+      var option = event.target.closest("[role=option]:not([aria-disabled])");
+      if (!option) return;
+      event.preventDefault();
+      choose(option);
+    });
+    input.addEventListener("blur", close);
+  });
 })();

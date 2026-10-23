@@ -56,9 +56,7 @@ class OpportunityListView(PermissionRequiredMixin, VisibleOpportunityMixin, List
 
     @staticmethod
     def count_by(opportunities, field):
-        return dict(
-            opportunities.order_by().values_list(field).annotate(total=Count("id", distinct=True))
-        )
+        return dict(opportunities.order_by().values_list(field).annotate(total=Count("id")))
 
     def get_context_data(self, **kwargs):
         total = sum(self.counts.values())

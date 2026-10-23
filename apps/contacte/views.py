@@ -2,6 +2,7 @@ from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
 from django.db.models import Count, Q
+from django.http import JsonResponse
 from django.shortcuts import redirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -202,3 +203,29 @@ class ContactAssignView(PermissionRequiredMixin, View):
         # Romanian puts "de" between the number and the noun from 20 up ("20 de contacte").
         de = "de " if count % 100 >= 20 or count % 100 == 0 else ""
         return f"{count} {de}contacte au fost atribuite lui {name}."
+
+
+class ContactAutocompleteView(PermissionRequiredMixin, View):
+    """The first 20 visible contacts matching ?q= (name, phone or email), as JSON, for
+    choosing a contact by typing (AutocompleteSelect)."""
+
+    permission_required = "contacte.view_contact"
+    http_method_names = ["get"]
+    limit = 20
+
+    def get(self, request):
+        query = request.GET.get("q", "").strip()
+        contacts = Contact.objects.visible_to(request.user)
+        if query:
+            contacts = contacts.filter(
+                Q(name__icontains=query) | Q(phone__icontains=query) | Q(email__icontains=query)
+            )
+        results = [
+            {
+                "id": contact.pk,
+                "label": contact.name,
+                "detail": " · ".join(filter(None, [contact.get_kind_display(), contact.phone])),
+            }
+            for contact in contacts.only("pk", "name", "kind", "phone")[: self.limit]
+        ]
+        return JsonResponse({"results": results})

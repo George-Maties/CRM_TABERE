@@ -13,6 +13,8 @@ class OpportunityAdmin(admin.ModelAdmin):
     list_display = ["title", "status", "camp", "owner", "updated_at"]
     list_filter = ["status", "owner", "camp"]
     search_fields = ["contact__name"]
+    # Thousands of contacts: chosen by typing, not from a <select>
+    autocomplete_fields = ["contact"]
     inlines = [NoteInline]
 
     def get_queryset(self, request):

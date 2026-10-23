@@ -755,6 +755,55 @@ body {
   transition: opacity 150ms var(--app-ease);
 }
 
+/* ---- Autocomplete (AutocompleteSelect): matches under the search box ---- */
+.autocomplete {
+  position: relative;
+}
+
+.autocomplete-list {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  left: 0;
+  z-index: 1000;
+  max-height: 18rem;
+  padding: 0.25rem;
+  margin: 0.25rem 0 0;
+  overflow-y: auto;
+  list-style: none;
+  background-color: var(--app-surface);
+  border: 1px solid var(--app-border);
+  border-radius: var(--bs-border-radius);
+  box-shadow: var(--app-shadow);
+}
+
+.autocomplete-list [role="option"] {
+  display: flex;
+  flex-direction: column;
+  padding: 0.5rem 0.625rem;
+  cursor: pointer;
+  border-radius: var(--bs-border-radius-sm);
+}
+
+.autocomplete-list [role="option"]:hover,
+.autocomplete-list [aria-selected="true"] {
+  background-color: var(--app-hover);
+}
+
+.autocomplete-label {
+  font-weight: 600;
+}
+
+.autocomplete-detail,
+.autocomplete-list .autocomplete-empty {
+  font-size: 0.8125rem;
+  color: var(--app-muted);
+}
+
+.autocomplete-list .autocomplete-empty {
+  cursor: default;
+}
+
 /* ---- Bulk actions bar: on top of a list with checkboxes ---- */
 .bulk-bar {
   display: flex;
