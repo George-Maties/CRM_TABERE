@@ -1090,6 +1090,94 @@ body {
   font-weight: 600;
 }
 
+/* ---- Camp participants: children under their contact, the "+" that adds one ---- */
+.participants .col-actions {
+  width: 1%;
+  text-align: right;
+  white-space: nowrap;
+}
+
+.participant-add {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2rem;
+  height: 2rem;
+  padding: 0;
+}
+
+/* Open, the "+" turns into "×" */
+.participant-add[aria-expanded="true"] .bi {
+  transform: rotate(45deg);
+}
+
+@media (prefers-reduced-motion: no-preference) {
+  .participant-add .bi {
+    transition: transform 150ms var(--app-ease);
+  }
+}
+
+.participants .child-row > td,
+.participants .child-form-row > td {
+  background-color: var(--app-bg);
+}
+
+.participants .child-row > td {
+  padding-top: 0.375rem;
+  padding-bottom: 0.375rem;
+}
+
+.child-name {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding-left: 1rem;
+}
+
+.child-name .bi,
+.child-form-arrow {
+  color: var(--app-muted);
+}
+
+.child-remove {
+  width: 2rem;
+  height: 2rem;
+}
+
+.child-remove .bi {
+  font-size: 0.875rem;
+}
+
+.child-form {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: flex-end;
+  gap: 0.5rem 0.75rem;
+  padding: 0.25rem 0 0.25rem 1rem;
+}
+
+.child-form-arrow {
+  align-self: center;
+  margin-top: 1.5rem;
+}
+
+.child-form-field {
+  flex: 1 1 12rem;
+}
+
+.child-form-field .form-label {
+  margin-bottom: 0.25rem;
+}
+
+.child-form-date {
+  flex: 0 1 10rem;
+}
+
+.child-form-actions {
+  display: flex;
+  gap: 0.25rem;
+}
+
 /* Under the status form of a won or lost opportunity */
 .closed-note {
   padding-top: 1rem;

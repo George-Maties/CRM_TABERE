@@ -23,6 +23,17 @@ def display_names(users):
 
 
 @register.filter
+def plural(count, forms):
+    """ "1 copil", "3 copii", "20 de copii": the number with the noun's singular or plural
+    (forms="copil,copii"), and the "de" Romanian puts after numbers from 20 up."""
+    one, many = forms.split(",")
+    if count == 1:
+        return f"1 {one}"
+    de = "de " if count % 100 >= 20 or (count and count % 100 == 0) else ""
+    return f"{count} {de}{many}"
+
+
+@register.filter
 def role(user):
     """The user's role, as shown in the interface ("Fondator", "Vânzător")."""
     return role_label(user)

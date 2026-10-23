@@ -1,7 +1,7 @@
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
-from django.utils import formats
+from django.utils import formats, timezone
 
 from apps.core.models import TaskBase
 
@@ -54,3 +54,43 @@ class Task(TaskBase):
         return f"{self.camp.get_absolute_url()}#sarcini"
 
     parent_icon = "bi-backpack"
+
+
+class Child(models.Model):
+    """A child who comes to camp: listed on the camp page under the contact (the parent or
+    teacher) whose won opportunity brought them."""
+
+    opportunity = models.ForeignKey(
+        "oportunitati.Opportunity",
+        on_delete=models.CASCADE,
+        related_name="children",
+        verbose_name="oportunitate",
+    )
+    name = models.CharField("numele copilului", max_length=200)
+    birth_date = models.DateField("data nașterii", null=True, blank=True)
+    created_by = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        related_name="+",
+        verbose_name="adăugat de",
+    )
+    created_at = models.DateTimeField("adăugat la", auto_now_add=True)
+
+    class Meta:
+        ordering = ["name"]
+        verbose_name = "copil"
+        verbose_name_plural = "copii"
+
+    def __str__(self):
+        return self.name
+
+    @property
+    def age(self):
+        """Age in whole years when the camp starts (today, if not in a camp)."""
+        if self.birth_date is None:
+            return None
+        camp = self.opportunity.camp
+        on = camp.start_date if camp else timezone.localdate()
+        born = self.birth_date
+        return on.year - born.year - ((on.month, on.day) < (born.month, born.day))

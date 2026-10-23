@@ -37,29 +37,68 @@
     <div class="col-xl-8">
       <section class="card">
         <div class="card-body pb-0">
-          <h2 class="card-title-sm">Participanți <span class="count-pill">{{ participants|length }}</span></h2>
+          <h2 class="card-title-sm">Participanți <span class="count-pill">{{ participants|length }}</span>{% if child_count %} <span class="text-body-secondary small fw-normal">{{ child_count|plural:"copil,copii" }}</span>{% endif %}</h2>
         </div>
         {% if participants %}
           <div class="table-responsive">
-            <table class="table table-hover align-middle mb-0">
+            <table class="table table-hover align-middle mb-0 participants">
               <thead>
                 <tr>
                   <th scope="col">Contact</th>
                   <th scope="col">Telefon</th>
                   <th scope="col" class="d-none d-md-table-cell">Oportunitate</th>
                   <th scope="col" class="d-none d-sm-table-cell">Responsabil</th>
+                  <th scope="col" class="col-actions"><span class="visually-hidden">Acțiuni</span></th>
                 </tr>
               </thead>
               <tbody>
                 {% for opportunity in participants %}
-                  <tr>
+                  <tr id="participant-{{ opportunity.pk }}">
                     <td>{% if opportunity.contact_id in visible_contact_ids %}<a class="fw-semibold row-link" href="{{ opportunity.contact.get_absolute_url }}">{{ opportunity.contact.name }}</a>{% else %}<span class="fw-semibold">{{ opportunity.contact.name }}</span>{% endif %}</td>
                     <td class="text-nowrap">{% if opportunity.contact.phone and opportunity.contact_id in visible_contact_ids %}<a href="tel:{{ opportunity.contact.phone }}">{{ opportunity.contact.phone }}</a>{% else %}—{% endif %}</td>
                     <td class="d-none d-md-table-cell">
-                      {% if opportunity.pk in visible_ids %}<a href="{{ opportunity.get_absolute_url }}">{{ opportunity.title }}</a>{% else %}<span class="text-body-secondary">—</span>{% endif %}
+                      {% if opportunity.can_edit %}<a href="{{ opportunity.get_absolute_url }}">{{ opportunity.title }}</a>{% else %}<span class="text-body-secondary">—</span>{% endif %}
                     </td>
                     <td class="d-none d-sm-table-cell">{{ opportunity.owner|display_name }}</td>
+                    <td class="col-actions">
+                      {% if opportunity.can_edit and perms.tabere.add_child %}
+                        <button class="btn btn-sm btn-outline-secondary participant-add" type="button"
+                                data-bs-toggle="collapse" data-bs-target="#copil-{{ opportunity.pk }}"
+                                aria-expanded="{% if child_form_for == opportunity.pk %}true{% else %}false{% endif %}" aria-controls="copil-{{ opportunity.pk }}"
+                                aria-label="Adaugă un copil la {{ opportunity.contact.name }}" title="Adaugă copil">
+                          <i class="bi bi-plus-lg" aria-hidden="true"></i>
+                        </button>
+                      {% endif %}
+                    </td>
                   </tr>
+                  {# The children who come with this contact, a step to the right #}
+                  {% for child in opportunity.children.all %}
+                    <tr class="child-row">
+                      <td>
+                        <span class="child-name"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ child.name }}</span>
+                      </td>
+                      <td class="text-body-secondary text-nowrap" colspan="3">
+                        {% if child.birth_date %}<span title="Născut pe {{ child.birth_date|date:'j F Y'|lower }}">{{ child.age|plural:"an,ani" }}</span>{% else %}—{% endif %}
+                      </td>
+                      <td class="col-actions">
+                        {% if opportunity.can_edit and perms.tabere.delete_child %}
+                          <form method="post" action="{% url 'tabere:child-delete' child.pk %}" data-confirm="Scoateți pe {{ child.name }} din tabără?">
+                            {% csrf_token %}
+                            <button class="btn-icon child-remove" type="submit" aria-label="Scoate pe {{ child.name }} din tabără" title="Scoate din tabără">
+                              <i class="bi bi-x-lg" aria-hidden="true"></i>
+                            </button>
+                          </form>
+                        {% endif %}
+                      </td>
+                    </tr>
+                  {% endfor %}
+                  {% if opportunity.can_edit and perms.tabere.add_child %}
+                    {% if child_form_for == opportunity.pk %}
+                      {% include "tabere/_child_form.html" with opportunity=opportunity form=child_form open=True %}
+                    {% else %}
+                      {% include "tabere/_child_form.html" with opportunity=opportunity form=None %}
+                    {% endif %}
+                  {% endif %}
                 {% endfor %}
               </tbody>
             </table>

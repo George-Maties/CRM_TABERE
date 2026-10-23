@@ -10,8 +10,8 @@ from django.views.generic import CreateView, DeleteView, DetailView, ListView, U
 from apps.contacte.models import Contact
 from apps.oportunitati.models import Opportunity, Status
 
-from .forms import CampForm, TaskForm
-from .models import Camp, Task
+from .forms import CampForm, ChildForm, TaskForm
+from .models import Camp, Child, Task
 
 
 class CampListView(PermissionRequiredMixin, ListView):
@@ -35,9 +35,10 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
     template_name = "tabere/detail.html"
 
     def get_context_data(self, **kwargs):
-        participants = (
+        participants = list(
             self.object.opportunities.filter(status=Status.WON)
-            .select_related("contact", "owner")
+            .select_related("contact", "owner", "camp")
+            .prefetch_related("children__opportunity__camp")
             .with_titles()
         )
         visible_ids = set(
@@ -45,6 +46,9 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
             .filter(camp=self.object)
             .values_list("pk", flat=True)
         )
+        for opportunity in participants:
+            # Only who works the opportunity opens it and adds or removes its children.
+            opportunity.can_edit = opportunity.pk in visible_ids
         visible_contact_ids = set(
             Contact.objects.visible_to(self.request.user)
             .filter(opportunities__camp=self.object)
@@ -54,6 +58,12 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
             "participants": participants,
             "visible_ids": visible_ids,
             "visible_contact_ids": visible_contact_ids,
+            "child_count": Child.objects.filter(
+                opportunity__camp=self.object, opportunity__status=Status.WON
+            ).count(),
+            # The participant whose "+" form came back with errors, opened again
+            "child_form": None,
+            "child_form_for": None,
             "tasks": self.object.tasks.select_related("assigned_to", "created_by"),
             "task_form": TaskForm(initial={"assigned_to": self.request.user}),
         }
@@ -129,3 +139,48 @@ class TaskToggleView(PermissionRequiredMixin, View):
         if next_url and next_url.startswith("/") and not next_url.startswith("//"):
             return redirect(next_url)
         return redirect(f"{task.camp.get_absolute_url()}#sarcini")
+
+
+def participant_for(user, pk):
+    """A won opportunity (a contact in a camp) the user works, or a 404: children are added
+    and removed only under one's own contacts (everyone's, for roles that see everything)."""
+    participants = Opportunity.objects.visible_to(user).filter(
+        status=Status.WON, camp__isnull=False
+    )
+    return get_object_or_404(participants.select_related("camp", "contact"), pk=pk)
+
+
+class ChildCreateView(PermissionRequiredMixin, View):
+    permission_required = "tabere.add_child"
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        opportunity = participant_for(request.user, pk)
+        camp = opportunity.camp
+        form = ChildForm(request.POST)
+        if not form.is_valid():
+            # Show the camp page again, with the form open under that contact.
+            page = CampDetailView(request=request, kwargs={"pk": camp.pk})
+            page.object = camp
+            return page.render_to_response(
+                page.get_context_data(child_form=form, child_form_for=opportunity.pk)
+            )
+        form.instance.opportunity = opportunity
+        form.instance.created_by = request.user
+        child = form.save()
+        messages.success(
+            request, f"{child.name} a fost adăugat la {opportunity.contact.name}, în „{camp.name}”."
+        )
+        return redirect(f"{camp.get_absolute_url()}#participant-{opportunity.pk}")
+
+
+class ChildDeleteView(PermissionRequiredMixin, View):
+    permission_required = "tabere.delete_child"
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        child = get_object_or_404(Child.objects.select_related("opportunity"), pk=pk)
+        opportunity = participant_for(request.user, child.opportunity_id)
+        child.delete()
+        messages.success(request, f"{child.name} a fost scos din tabără.")
+        return redirect(f"{opportunity.camp.get_absolute_url()}#participant-{opportunity.pk}")

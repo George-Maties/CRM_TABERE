@@ -2,7 +2,7 @@ from django.urls import reverse
 
 from apps.oportunitati.models import Status
 
-from .models import Camp, Task
+from .models import Camp, Child, Task
 
 
 def test_camp_list_counts_only_won_participants(seller_client, seller, make_opportunity):
@@ -99,3 +99,99 @@ def test_camp_page_hides_contacts_the_seller_cannot_see(
     assert contact.name in html
     assert contact.get_absolute_url() not in html
     assert contact.phone not in html
+
+
+def test_seller_adds_child_under_their_contact(seller_client, seller, make_opportunity):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+
+    response = seller_client.post(
+        reverse("tabere:child-add", args=[opportunity.pk]),
+        {"name": "Matei Pop", "birth_date": "2017-09-01"},
+    )
+
+    assert response.url == f"{camp.get_absolute_url()}#participant-{opportunity.pk}"
+    child = Child.objects.get()
+    assert child.opportunity == opportunity
+    assert child.name == "Matei Pop" and child.created_by == seller
+    # Age when the camp starts: 9 (turns 10 in September)
+    assert child.age == 9
+    page = seller_client.get(camp.get_absolute_url())
+    assert page.context["child_count"] == 1
+    html = page.content.decode()
+    assert 'class="child-row"' in html and "Matei Pop" in html and "9 ani" in html
+    assert f'data-bs-target="#copil-{opportunity.pk}"' in html
+
+
+def test_contact_can_bring_several_children(seller_client, seller, make_opportunity):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+    for name in ("Matei Pop", "Ana Pop"):
+        seller_client.post(reverse("tabere:child-add", args=[opportunity.pk]), {"name": name})
+
+    response = seller_client.get(camp.get_absolute_url())
+
+    [participant] = response.context["participants"]
+    assert [c.name for c in participant.children.all()] == ["Ana Pop", "Matei Pop"]
+    assert "2 copii" in response.content.decode()
+
+
+def test_child_without_name_reopens_the_form_with_the_error(
+    seller_client, seller, make_opportunity
+):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+
+    response = seller_client.post(
+        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "", "birth_date": ""}
+    )
+
+    assert response.status_code == 200
+    assert response.context["child_form_for"] == opportunity.pk
+    assert response.context["child_form"].errors["name"]
+    assert 'class="child-form-row collapse show"' in response.content.decode()
+    assert not Child.objects.exists()
+
+
+def test_seller_cannot_add_children_to_someone_elses_contact(
+    seller_client, other_seller, make_opportunity
+):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    theirs = make_opportunity(other_seller, status=Status.WON, camp=camp)
+
+    response = seller_client.post(reverse("tabere:child-add", args=[theirs.pk]), {"name": "X"})
+    page = seller_client.get(camp.get_absolute_url()).content.decode()
+
+    assert response.status_code == 404
+    assert not Child.objects.exists()
+    assert f'data-bs-target="#copil-{theirs.pk}"' not in page
+
+
+def test_children_only_for_contacts_in_a_camp(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    response = seller_client.post(
+        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "Matei"}
+    )
+
+    assert response.status_code == 404
+
+
+def test_seller_removes_child(seller_client, seller, make_opportunity):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+    child = Child.objects.create(opportunity=opportunity, name="Matei Pop")
+
+    response = seller_client.post(reverse("tabere:child-delete", args=[child.pk]))
+
+    assert response.url == f"{camp.get_absolute_url()}#participant-{opportunity.pk}"
+    assert not Child.objects.exists()
+
+
+def test_founder_adds_child_to_any_contact(founder_client, seller, make_opportunity):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+
+    founder_client.post(reverse("tabere:child-add", args=[opportunity.pk]), {"name": "Ioana"})
+
+    assert opportunity.children.get().name == "Ioana"

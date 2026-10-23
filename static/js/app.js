@@ -272,4 +272,20 @@
       search();
     });
   });
+
+  // form[data-confirm="Question?"]: ask before sending (removing something)
+  document.addEventListener("submit", function (event) {
+    var form = event.target;
+    if (form.dataset && form.dataset.confirm && !window.confirm(form.dataset.confirm)) {
+      event.preventDefault();
+      event.stopImmediatePropagation();
+    }
+  }, true);
+
+  // [data-focus-on-show]: a Bootstrap collapse that, once open, puts the cursor in its first field
+  document.addEventListener("shown.bs.collapse", function (event) {
+    if (!event.target.hasAttribute("data-focus-on-show")) return;
+    var field = event.target.querySelector("input:not([type=hidden]), select, textarea");
+    if (field) field.focus();
+  });
 })();

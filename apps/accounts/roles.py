@@ -29,6 +29,10 @@ _SELLER_PERMISSIONS = [
     "tabere.view_task",
     "tabere.add_task",
     "tabere.change_task",
+    # Children who come to camp, under the contacts of the seller's own opportunities
+    "tabere.view_child",
+    "tabere.add_child",
+    "tabere.delete_child",
 ]
 
 ROLES = {

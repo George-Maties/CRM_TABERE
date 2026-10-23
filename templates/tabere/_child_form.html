@@ -1,0 +1,28 @@
+{% comment %}
+  The "+" row under a participant on the camp page: adds a child who comes with that contact.
+  form is the ChildForm sent back with errors (open=True keeps the row open), or None.
+{% endcomment %}
+<tr class="child-form-row collapse{% if open %} show{% endif %}" id="copil-{{ opportunity.pk }}" data-focus-on-show>
+  <td colspan="5">
+    <form class="child-form" method="post" action="{% url 'tabere:child-add' opportunity.pk %}" novalidate data-loading-text="Se adaugă…">
+      {% csrf_token %}
+      <i class="bi bi-arrow-return-right child-form-arrow" aria-hidden="true"></i>
+      <div class="child-form-field">
+        <label class="form-label small" for="copil-nume-{{ opportunity.pk }}">Numele copilului <span class="text-danger" aria-hidden="true">*</span></label>
+        <input class="form-control form-control-sm{% if form.name.errors %} is-invalid{% endif %}" type="text" name="name" id="copil-nume-{{ opportunity.pk }}"
+               value="{{ form.name.value|default:'' }}" maxlength="200" autocomplete="off" required>
+        {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="child-form-field child-form-date">
+        <label class="form-label small" for="copil-nastere-{{ opportunity.pk }}">Data nașterii</label>
+        <input class="form-control form-control-sm{% if form.birth_date.errors %} is-invalid{% endif %}" type="date" name="birth_date" id="copil-nastere-{{ opportunity.pk }}"
+               value="{{ form.birth_date.value|default:'' }}">
+        {% for error in form.birth_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="child-form-actions">
+        <button type="submit" class="btn btn-primary btn-sm">Adaugă copilul</button>
+        <button type="button" class="btn btn-link btn-sm" data-bs-toggle="collapse" data-bs-target="#copil-{{ opportunity.pk }}">Renunță</button>
+      </div>
+    </form>
+  </td>
+</tr>

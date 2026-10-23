@@ -12,4 +12,6 @@ urlpatterns = [
     path("<int:pk>/sterge/", views.CampDeleteView.as_view(), name="delete"),
     path("<int:pk>/sarcini/", views.TaskCreateView.as_view(), name="task"),
     path("sarcini/<int:pk>/gata/", views.TaskToggleView.as_view(), name="task-toggle"),
+    path("participanti/<int:pk>/copii/", views.ChildCreateView.as_view(), name="child-add"),
+    path("copii/<int:pk>/sterge/", views.ChildDeleteView.as_view(), name="child-delete"),
 ]

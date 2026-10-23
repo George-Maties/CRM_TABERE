@@ -3,7 +3,7 @@ from django import forms
 from apps.accounts.roles import team_members
 from apps.core.forms import BootstrapFormMixin, UserChoiceField
 
-from .models import Camp, Task
+from .models import Camp, Child, Task
 
 
 class CampForm(BootstrapFormMixin, forms.ModelForm):
@@ -35,3 +35,13 @@ class TaskForm(BootstrapFormMixin, forms.ModelForm):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.fields["assigned_to"].queryset = team_members()
+
+
+class ChildForm(BootstrapFormMixin, forms.ModelForm):
+    class Meta:
+        model = Child
+        fields = ["name", "birth_date"]
+        widgets = {
+            "name": forms.TextInput(attrs={"autocomplete": "off"}),
+            "birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+        }
