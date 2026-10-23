@@ -77,25 +77,15 @@
           {% if tasks %}
             <ul class="task-list">
               {% for task in tasks %}
-                {% include "components/task_item.html" with task=task %}
+                {% include "components/task_item.html" with task=task can_toggle=perms.tabere.change_task %}
               {% endfor %}
             </ul>
           {% else %}
             <p class="text-body-secondary">Nicio sarcină pentru această tabără.</p>
           {% endif %}
           {% if perms.tabere.add_task %}
-            <details class="task-add"{% if task_form.errors %} open{% endif %}>
-              <summary class="btn btn-outline-secondary btn-sm"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Adaugă sarcină</summary>
-              <form method="post" action="{% url 'tabere:task' camp.pk %}" novalidate class="mt-3" data-loading-text="Se salvează…">
-                {% csrf_token %}
-                {% include "components/form_field.html" with field=task_form.title %}
-                <div class="row">
-                  <div class="col-sm-7">{% include "components/form_field.html" with field=task_form.assigned_to %}</div>
-                  <div class="col-sm-5">{% include "components/form_field.html" with field=task_form.due_date %}</div>
-                </div>
-                <button type="submit" class="btn btn-primary btn-sm">Salvează sarcina</button>
-              </form>
-            </details>
+            {% url 'tabere:task' camp.pk as task_url %}
+            {% include "components/task_form.html" with form=task_form action=task_url %}
           {% endif %}
         </div>
       </section>

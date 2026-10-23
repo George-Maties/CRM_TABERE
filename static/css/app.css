@@ -910,6 +910,22 @@ body {
   background-color: var(--app-border);
 }
 
+/* Phones: the tabs wrap instead of scrolling sideways, and the divider becomes a line
+   that puts the second group (sellers, people) under the first. */
+@media (max-width: 767.98px) {
+  .status-tabs {
+    flex-wrap: wrap;
+    overflow-x: visible;
+  }
+
+  .status-tabs-divider {
+    flex-basis: 100%;
+    width: auto;
+    height: 1px;
+    margin: 0.125rem 0;
+  }
+}
+
 .status-tab-count {
   font-size: 0.8125rem;
   font-variant-numeric: tabular-nums;
@@ -1072,6 +1088,13 @@ body {
 
 .status-change {
   font-weight: 600;
+}
+
+/* Under the status form of a won or lost opportunity */
+.closed-note {
+  padding-top: 1rem;
+  margin-top: 1rem;
+  border-top: 1px solid var(--app-border);
 }
 
 /* Camp field under the status select (shown for "Câștigat") */

@@ -3,7 +3,7 @@ from django.urls import reverse
 
 from apps.tabere.models import Camp
 
-from .models import Opportunity, Status
+from .models import Opportunity, Status, Task
 
 
 def test_seller_sees_only_own_opportunities(seller_client, seller, other_seller, make_opportunity):
@@ -146,16 +146,49 @@ def _change_status(client, opportunity, **data):
 
 
 def test_reason_is_asked_only_when_losing(seller_client, seller, make_opportunity):
-    opportunity = make_opportunity(seller, status=Status.LOST)
+    opportunity = make_opportunity(seller)
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
 
-    response = _change_status(seller_client, opportunity, status="potential")
+    response = _change_status(seller_client, opportunity, status="castigata", camp=camp.pk)
 
     assert response.status_code == 302
     opportunity.refresh_from_db()
-    assert opportunity.status == Status.POTENTIAL
+    assert opportunity.status == Status.WON
     change = opportunity.notes.get()
-    assert change.status_change == "Pierdut → Potențial" and change.text == ""
-    assert change.new_status == Status.POTENTIAL
+    assert change.text == "" and change.new_status == Status.WON
+
+
+@pytest.mark.parametrize("closed", [Status.WON, Status.LOST])
+def test_closed_opportunity_never_becomes_potential_again(
+    seller_client, seller, make_opportunity, closed
+):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(
+        seller, status=closed, camp=camp if closed == Status.WON else None
+    )
+
+    response = _change_status(seller_client, opportunity, status="potential")
+
+    form = response.context["status_form"]
+    assert form.errors["status"]
+    assert [value for value, _ in form.fields["status"].choices] == ["castigata", "pierduta"]
+    opportunity.refresh_from_db()
+    assert opportunity.status == closed
+    page = response.content.decode()
+    assert "nu mai poate redeveni „Potențial”" in page
+    assert f"/oportunitati/adauga/?contact={opportunity.contact.pk}" in page
+    with pytest.raises(ValueError):
+        opportunity.change_status(Status.POTENTIAL, seller)
+
+
+def test_potential_opportunity_offers_every_status(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    response = seller_client.get(opportunity.get_absolute_url())
+
+    choices = [value for value, _ in response.context["status_form"].fields["status"].choices]
+    assert choices == ["potential", "castigata", "pierduta"]
+    assert "Oportunitatea e închisă" not in response.content.decode()
 
 
 def test_reason_field_shows_only_for_lost(seller_client, seller, make_opportunity):
@@ -218,18 +251,6 @@ def test_reason_typed_for_another_status_is_not_kept(seller_client, seller, make
     assert opportunity.notes.count() == 1
 
 
-def test_reopening_lost_opportunity_keeps_the_seller(
-    founder_client, founder, seller, make_opportunity
-):
-    opportunity = make_opportunity(seller)
-    opportunity.change_status(Status.LOST, seller, "Nu răspunde.")
-
-    _change_status(founder_client, opportunity, status="potential")
-
-    opportunity.refresh_from_db()
-    assert opportunity.status == Status.POTENTIAL and opportunity.owner == seller
-
-
 def test_won_needs_an_existing_camp(seller_client, seller, make_opportunity):
     opportunity = make_opportunity(seller)
 
@@ -265,10 +286,10 @@ def test_leaving_won_takes_contact_out_of_camp(seller_client, seller, make_oppor
     camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
     opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
 
-    _change_status(seller_client, opportunity, status="potential")
+    _change_status(seller_client, opportunity, status="pierduta", reason="A renunțat.")
 
     opportunity.refresh_from_db()
-    assert opportunity.camp is None
+    assert opportunity.status == Status.LOST and opportunity.camp is None
 
 
 def test_history_is_a_timeline_grouped_by_day(seller_client, seller, make_opportunity):
@@ -352,3 +373,70 @@ def test_moving_to_another_contact_takes_its_next_number(
 
     opportunity.refresh_from_db()
     assert (opportunity.contact, opportunity.number) == (other, 2)
+
+
+def test_seller_adds_task_on_opportunity_for_founder(
+    seller_client, seller, founder, make_opportunity
+):
+    opportunity = make_opportunity(seller)
+
+    response = seller_client.post(
+        reverse("oportunitati:task", args=[opportunity.pk]),
+        {"title": "Sună joi", "assigned_to": founder.pk, "due_date": "2027-06-01"},
+    )
+
+    assert response.url == f"{opportunity.get_absolute_url()}#sarcini"
+    task = opportunity.tasks.get()
+    assert task.assigned_to == founder and task.created_by == seller
+    page = seller_client.get(opportunity.get_absolute_url()).content.decode()
+    assert "Sună joi" in page and 'id="sarcini"' in page
+
+
+def test_opportunity_task_goes_only_to_its_seller_or_a_founder(
+    founder_client, seller, other_seller, make_opportunity
+):
+    opportunity = make_opportunity(seller)
+
+    response = founder_client.post(
+        reverse("oportunitati:task", args=[opportunity.pk]),
+        {"title": "Sună", "assigned_to": other_seller.pk},
+    )
+
+    assert response.context["task_form"].errors["assigned_to"]
+    assert not opportunity.tasks.exists()
+
+
+def test_task_without_title_shows_error(seller_client, seller, make_opportunity):
+    opportunity = make_opportunity(seller)
+
+    response = seller_client.post(
+        reverse("oportunitati:task", args=[opportunity.pk]), {"assigned_to": seller.pk}
+    )
+
+    assert response.status_code == 200
+    assert response.context["task_form"].errors["title"]
+
+
+def test_opportunity_task_toggle(seller_client, seller, make_opportunity):
+    task = Task.objects.create(
+        opportunity=make_opportunity(seller), title="Sună", assigned_to=seller
+    )
+
+    seller_client.post(reverse("oportunitati:task-toggle", args=[task.pk]))
+
+    task.refresh_from_db()
+    assert task.done and task.done_at
+
+
+def test_seller_cannot_add_or_toggle_tasks_on_someone_elses_opportunity(
+    seller_client, other_seller, make_opportunity
+):
+    opportunity = make_opportunity(other_seller)
+    task = Task.objects.create(opportunity=opportunity, title="Sună", assigned_to=other_seller)
+
+    add = seller_client.post(reverse("oportunitati:task", args=[opportunity.pk]), {"title": "X"})
+    toggle = seller_client.post(reverse("oportunitati:task-toggle", args=[task.pk]))
+
+    assert add.status_code == 404 and toggle.status_code == 404
+    task.refresh_from_db()
+    assert not task.done

@@ -2,7 +2,23 @@ from django.db.models import Count
 from django.views.generic import TemplateView
 
 from apps.oportunitati.models import Note, Opportunity
-from apps.tabere.models import Task
+from apps.oportunitati.models import Task as OpportunityTask
+from apps.tabere.models import Task as CampTask
+
+# How many entries "Activitate recentă" shows; older ones stay in each opportunity's history.
+RECENT_ACTIVITY = 20
+
+
+def add_titles(opportunities):
+    """Load what the titles need ("Ana Pop #2") in one query, instead of one per opportunity."""
+    totals = dict(
+        Opportunity.objects.filter(contact__in={o.contact_id for o in opportunities})
+        .order_by()
+        .values_list("contact")
+        .annotate(Count("pk"))
+    )
+    for opportunity in opportunities:
+        opportunity.contact_total = totals[opportunity.contact_id]
 
 
 class WallView(TemplateView):
@@ -10,24 +26,27 @@ class WallView(TemplateView):
 
     def get_context_data(self, **kwargs):
         user = self.request.user
+        # Sellers: what happens on their own opportunities; founders and admins: everything.
         visible = Opportunity.objects.visible_to(user)
-        my_tasks = Task.objects.filter(assigned_to=user, done=False).select_related(
+        camp_tasks = CampTask.objects.filter(assigned_to=user, done=False).select_related(
             "camp", "created_by"
+        )
+        opportunity_tasks = list(
+            OpportunityTask.objects.filter(assigned_to=user, done=False).select_related(
+                "opportunity__contact", "created_by"
+            )
         )
         activity = list(
             Note.objects.filter(opportunity__in=visible)
             .select_related("author", "opportunity__contact")
-            .order_by("-created_at")[:15]
+            .order_by("-created_at", "-pk")[:RECENT_ACTIVITY]
         )
-        # What the opportunity titles need ("Ana Pop #2"), in one query instead of one per note
-        totals = dict(
-            Opportunity.objects.filter(
-                contact__in={note.opportunity.contact_id for note in activity}
-            )
-            .order_by()
-            .values_list("contact")
-            .annotate(Count("pk"))
+        add_titles([task.opportunity for task in opportunity_tasks])
+        add_titles([note.opportunity for note in activity])
+        return super().get_context_data(
+            camp_tasks=camp_tasks,
+            opportunity_tasks=opportunity_tasks,
+            activity=activity,
+            sees_all_activity=user.has_perm("oportunitati.view_all_opportunities"),
+            **kwargs,
         )
-        for note in activity:
-            note.opportunity.contact_total = totals[note.opportunity.contact_id]
-        return super().get_context_data(my_tasks=my_tasks, activity=activity, **kwargs)

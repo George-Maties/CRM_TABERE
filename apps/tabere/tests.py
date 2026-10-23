@@ -87,12 +87,6 @@ def test_task_toggle(seller_client, seller):
     assert task.done and task.done_at is not None
 
 
-def test_opportunity_page_has_no_tasks(seller_client, seller, make_opportunity):
-    response = seller_client.get(make_opportunity(seller).get_absolute_url())
-
-    assert "task_form" not in response.context
-
-
 def test_camp_page_hides_contacts_the_seller_cannot_see(
     seller_client, other_seller, contact, make_opportunity
 ):

@@ -7,27 +7,46 @@
 
 {% block page_content %}
   <div class="row g-4">
-    <div class="col-lg-7">
-      <section class="card">
+    {# Three columns: camp tasks, opportunity tasks, recent activity #}
+    <div class="col-md-6 col-xl-4">
+      <section class="card h-100">
         <div class="card-body">
-          <h2 class="card-title-sm">Sarcinile mele <span class="count-pill">{{ my_tasks|length }}</span></h2>
-          {% if my_tasks %}
+          <h2 class="card-title-sm">Sarcini tabere <span class="count-pill">{{ camp_tasks|length }}</span></h2>
+          {% if camp_tasks %}
             <ul class="task-list">
-              {% for task in my_tasks %}
-                {% include "components/task_item.html" with task=task show_camp=True %}
+              {% for task in camp_tasks %}
+                {% include "components/task_item.html" with task=task can_toggle=perms.tabere.change_task show_parent=True %}
               {% endfor %}
             </ul>
           {% else %}
-            {% include "components/empty_state.html" with icon="bi-check2-circle" text="Nicio sarcină deschisă. Sarcinile primite de la colegi apar aici." %}
+            {% include "components/empty_state.html" with icon="bi-backpack" text="Nicio sarcină deschisă la tabere." %}
           {% endif %}
         </div>
       </section>
     </div>
 
-    <div class="col-lg-5">
-      <section class="card">
+    <div class="col-md-6 col-xl-4">
+      <section class="card h-100">
         <div class="card-body">
-          <h2 class="card-title-sm">Activitate recentă</h2>
+          <h2 class="card-title-sm">Sarcini oportunități <span class="count-pill">{{ opportunity_tasks|length }}</span></h2>
+          {% if opportunity_tasks %}
+            <ul class="task-list">
+              {% for task in opportunity_tasks %}
+                {% include "components/task_item.html" with task=task can_toggle=perms.oportunitati.change_task show_parent=True %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            {% include "components/empty_state.html" with icon="bi-briefcase" text="Nicio sarcină deschisă la oportunități." %}
+          {% endif %}
+        </div>
+      </section>
+    </div>
+
+    <div class="col-xl-4">
+      <section class="card h-100">
+        <div class="card-body">
+          <h2 class="card-title-sm mb-1">Activitate recentă</h2>
+          <p class="small text-body-secondary mb-3">Ultimele 20 de activități {% if sees_all_activity %}ale echipei{% else %}de pe oportunitățile dumneavoastră{% endif %}.</p>
           {% if activity %}
             <ol class="timeline timeline-compact">
               {% for note in activity %}

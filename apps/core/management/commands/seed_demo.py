@@ -8,6 +8,7 @@ from django.utils import timezone
 from apps.accounts.roles import FOUNDER, SELLER
 from apps.contacte.models import Contact
 from apps.oportunitati.models import Note, Opportunity, Status
+from apps.oportunitati.models import Task as OpportunityTask
 from apps.tabere.models import Camp, Task
 
 # Demo contacts are recognised by this e-mail domain, so --reset never touches real data.
@@ -147,6 +148,15 @@ TASKS = [
     ),
 ]
 
+# opportunity (by index in OPPORTUNITIES), task, assignee, created by, due in days, done
+OPPORTUNITY_TASKS = [
+    (0, "Trimite oferta pe email cu reducerea pentru frați", "seller", "seller", 0, False),
+    (1, "Sună din nou după-amiază", "seller", "seller", -1, False),
+    (2, "Pregătește oferta pentru clasă (3 zile, mai)", "founder", "founder", 4, False),
+    (7, "Confirmă dacă echipamentul de schi e inclus", "founder", "seller", 2, False),
+    (0, "Verifică locurile libere în seria 1", "seller", "founder", -3, True),
+]
+
 
 class Command(BaseCommand):
     help = (
@@ -240,10 +250,22 @@ class Command(BaseCommand):
                 done_at=now if done else None,
             )
 
+        for index, title, assignee, creator, due_in, done in OPPORTUNITY_TASKS:
+            OpportunityTask.objects.create(
+                opportunity=opportunities[index],
+                title=title,
+                assigned_to=people[assignee],
+                created_by=people[creator],
+                due_date=today + timedelta(days=due_in),
+                done=done,
+                done_at=now if done else None,
+            )
+
         note_count = Note.objects.filter(opportunity__in=opportunities).count()
+        task_count = len(TASKS) + len(OPPORTUNITY_TASKS)
         self.stdout.write(
             f"Created {len(contacts)} contacts, {len(opportunities)} opportunities, "
-            f"{note_count} notes, {len(TASKS)} tasks; {len(camps)} camps."
+            f"{note_count} notes, {task_count} tasks; {len(camps)} camps."
         )
 
     def member_of(self, role):

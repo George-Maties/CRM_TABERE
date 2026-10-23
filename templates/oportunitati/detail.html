@@ -71,9 +71,41 @@
               </div>
               <button type="submit" class="btn btn-primary btn-sm">Salvează statusul</button>
             </form>
+            {% if opportunity.is_closed %}
+              {# Won and lost are final: talking to the contact again means a new opportunity. #}
+              <div class="closed-note">
+                <p class="form-text mt-0 mb-2">
+                  <i class="bi bi-lock me-1" aria-hidden="true"></i>Oportunitatea e închisă și nu mai poate redeveni „Potențial”. Pentru o nouă discuție cu acest contact, creați o oportunitate nouă.
+                </p>
+                {% if perms.oportunitati.add_opportunity %}
+                  <a class="btn btn-outline-secondary btn-sm" href="{% url 'oportunitati:create' %}?contact={{ opportunity.contact.pk }}">
+                    <i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Oportunitate nouă
+                  </a>
+                {% endif %}
+              </div>
+            {% endif %}
           </div>
         </section>
       {% endif %}
+
+      <section class="card" id="sarcini">
+        <div class="card-body">
+          <h2 class="card-title-sm">Sarcini</h2>
+          {% if tasks %}
+            <ul class="task-list">
+              {% for task in tasks %}
+                {% include "components/task_item.html" with task=task can_toggle=perms.oportunitati.change_task %}
+              {% endfor %}
+            </ul>
+          {% else %}
+            <p class="text-body-secondary">Nicio sarcină pentru această oportunitate.</p>
+          {% endif %}
+          {% if perms.oportunitati.add_task %}
+            {% url 'oportunitati:task' opportunity.pk as task_url %}
+            {% include "components/task_form.html" with form=task_form action=task_url %}
+          {% endif %}
+        </div>
+      </section>
 
       <section class="card">
         <div class="card-body">

@@ -1,11 +1,13 @@
 from django import forms
+from django.db.models import Q
 
-from apps.accounts.roles import team_members
+from apps.accounts.roles import FOUNDER, team_members
 from apps.contacte.models import Contact
 from apps.core.forms import BootstrapFormMixin, UserChoiceField
+from apps.tabere.forms import TaskForm as CampTaskForm
 from apps.tabere.models import Camp
 
-from .models import Note, Opportunity, Status
+from .models import CLOSED_STATUSES, Note, Opportunity, Status, Task
 
 
 class OpportunityForm(BootstrapFormMixin, forms.ModelForm):
@@ -65,6 +67,8 @@ class StatusForm(BootstrapFormMixin, forms.Form):
         self.user = user
         kwargs.setdefault("initial", {"status": opportunity.status, "camp": opportunity.camp})
         super().__init__(*args, **kwargs)
+        if opportunity.is_closed:
+            self.fields["status"].choices = [(s.value, s.label) for s in CLOSED_STATUSES]
         if not self.fields["camp"].queryset.exists():
             self.fields[
                 "camp"
@@ -80,6 +84,12 @@ class StatusForm(BootstrapFormMixin, forms.Form):
                 self.add_error("camp", "Contactul e deja în această tabără.")
         elif status == self.opportunity.status:
             self.add_error("status", "Alegeți un status diferit de cel actual.")
+        elif status == Status.POTENTIAL and self.opportunity.is_closed:
+            self.add_error(
+                "status",
+                "O oportunitate câștigată sau pierdută nu mai redevine „Potențial”."
+                " Creați o oportunitate nouă.",
+            )
         elif status == Status.LOST and not cleaned.get("reason", "").strip():
             self.add_error("reason", "Scrieți motivul pentru care oportunitatea e pierdută.")
         return cleaned
@@ -105,3 +115,16 @@ class NoteForm(BootstrapFormMixin, forms.ModelForm):
         super().__init__(*args, **kwargs)
         # Only status changes are saved without text.
         self.fields["text"].required = True
+
+
+class TaskForm(CampTaskForm):
+    """A task on an opportunity, for its seller or a founder: the people who can open it."""
+
+    class Meta(CampTaskForm.Meta):
+        model = Task
+
+    def __init__(self, *args, opportunity, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["assigned_to"].queryset = team_members().filter(
+            Q(pk=opportunity.owner_id) | Q(groups__name=FOUNDER)
+        )

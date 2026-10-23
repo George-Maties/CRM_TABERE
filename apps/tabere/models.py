@@ -1,7 +1,9 @@
 from django.conf import settings
 from django.db import models
 from django.urls import reverse
-from django.utils import formats, timezone
+from django.utils import formats
+
+from apps.core.models import TaskBase
 
 
 class Camp(models.Model):
@@ -32,42 +34,23 @@ class Camp(models.Model):
         return reverse("tabere:detail", args=[self.pk])
 
 
-class Task(models.Model):
+class Task(TaskBase):
     camp = models.ForeignKey(
         Camp, on_delete=models.CASCADE, related_name="tasks", verbose_name="tabără"
     )
-    title = models.CharField("ce e de făcut", max_length=300)
-    assigned_to = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.PROTECT,
-        related_name="tasks",
-        verbose_name="atribuită lui",
-    )
-    created_by = models.ForeignKey(
-        settings.AUTH_USER_MODEL,
-        on_delete=models.SET_NULL,
-        null=True,
-        related_name="+",
-        verbose_name="creată de",
-    )
-    due_date = models.DateField("termen", null=True, blank=True)
-    done = models.BooleanField("gata", default=False)
-    done_at = models.DateTimeField("terminată la", null=True, blank=True)
-    created_at = models.DateTimeField("creată la", auto_now_add=True)
 
-    class Meta:
-        ordering = ["done", "due_date", "created_at"]
-        verbose_name = "sarcină"
-        verbose_name_plural = "sarcini"
+    class Meta(TaskBase.Meta):
+        pass
 
-    def __str__(self):
-        return self.title
+    def get_toggle_url(self):
+        return reverse("tabere:task-toggle", args=[self.pk])
 
     @property
-    def is_overdue(self):
-        return not self.done and self.due_date is not None and self.due_date < timezone.localdate()
+    def parent_label(self):
+        return self.camp.name
 
-    def toggle_done(self):
-        self.done = not self.done
-        self.done_at = timezone.now() if self.done else None
-        self.save(update_fields=["done", "done_at"])
+    @property
+    def parent_url(self):
+        return f"{self.camp.get_absolute_url()}#sarcini"
+
+    parent_icon = "bi-backpack"

@@ -4,6 +4,7 @@ from django.db.models import Count, Max, OuterRef, Subquery
 from django.urls import reverse
 
 from apps.contacte.models import Contact
+from apps.core.models import TaskBase
 from apps.tabere.models import Camp
 
 
@@ -12,6 +13,10 @@ class Status(models.TextChoices):
     POTENTIAL = "potential", "Potențial"
     WON = "castigata", "Câștigat"
     LOST = "pierduta", "Pierdut"
+
+
+# Final: a won or lost opportunity never becomes potential again; a new one is created instead.
+CLOSED_STATUSES = [Status.WON, Status.LOST]
 
 
 class OpportunityQuerySet(models.QuerySet):
@@ -111,6 +116,8 @@ class Opportunity(models.Model):
         The seller stays responsible whatever the status."""
         if new_status == Status.WON and camp is None:
             raise ValueError("A won opportunity needs a camp.")
+        if self.is_closed and new_status == Status.POTENTIAL:
+            raise ValueError("A won or lost opportunity can't become potential again.")
         change = f"{self.get_status_display()} → {Status(new_status).label}"
         self.status = new_status
         self.camp = camp if new_status == Status.WON else None
@@ -120,6 +127,10 @@ class Opportunity(models.Model):
         if reason:
             self.notes.create(author=user, text=reason)
         self.notes.create(author=user, status_change=change, new_status=new_status)
+
+    @property
+    def is_closed(self):
+        return self.status in CLOSED_STATUSES
 
     def touch(self):
         """Mark the opportunity as just updated (new note)."""
@@ -151,3 +162,25 @@ class Note(models.Model):
 
     def __str__(self):
         return self.status_change or self.text[:60]
+
+
+class Task(TaskBase):
+    opportunity = models.ForeignKey(
+        Opportunity, on_delete=models.CASCADE, related_name="tasks", verbose_name="oportunitate"
+    )
+
+    class Meta(TaskBase.Meta):
+        pass
+
+    def get_toggle_url(self):
+        return reverse("oportunitati:task-toggle", args=[self.pk])
+
+    @property
+    def parent_label(self):
+        return self.opportunity.title
+
+    @property
+    def parent_url(self):
+        return f"{self.opportunity.get_absolute_url()}#sarcini"
+
+    parent_icon = "bi-briefcase"

@@ -1,7 +1,7 @@
 from django.contrib import messages
 from django.contrib.auth.mixins import PermissionRequiredMixin
 from django.contrib.messages.views import SuccessMessageMixin
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy
 from django.views import View
@@ -11,8 +11,8 @@ from apps.accounts.roles import sellers_and_founders
 from apps.contacte.models import Contact
 from apps.core.templatetags.ui import display_name
 
-from .forms import NoteForm, OpportunityForm, StatusForm
-from .models import Opportunity, Status
+from .forms import NoteForm, OpportunityForm, StatusForm, TaskForm
+from .models import Opportunity, Status, Task
 
 
 class VisibleOpportunityMixin:
@@ -103,6 +103,10 @@ class OpportunityDetailView(PermissionRequiredMixin, VisibleOpportunityMixin, De
             "status_form": StatusForm(opportunity=self.object, user=self.request.user),
             "note_form": NoteForm(),
             "notes": self.object.notes.select_related("author"),
+            "tasks": self.object.tasks.select_related("assigned_to", "created_by"),
+            "task_form": TaskForm(
+                opportunity=self.object, initial={"assigned_to": self.request.user}
+            ),
         }
         context.update(kwargs)
         return super().get_context_data(**context)
@@ -206,3 +210,34 @@ class NoteCreateView(OpportunityActionView):
         form.save()
         opportunity.touch()
         return redirect(f"{opportunity.get_absolute_url()}#istoric")
+
+
+class TaskCreateView(OpportunityActionView):
+    permission_required = "oportunitati.add_task"
+
+    def post(self, request, pk):
+        opportunity = self.get_opportunity(pk)
+        form = TaskForm(request.POST, opportunity=opportunity)
+        if not form.is_valid():
+            return self.render_page(opportunity, task_form=form)
+        form.instance.opportunity = opportunity
+        form.instance.created_by = request.user
+        task = form.save()
+        messages.success(request, f"Sarcina a fost atribuită lui {display_name(task.assigned_to)}.")
+        return redirect(f"{opportunity.get_absolute_url()}#sarcini")
+
+
+class TaskToggleView(PermissionRequiredMixin, View):
+    permission_required = "oportunitati.change_task"
+    http_method_names = ["post"]
+
+    def post(self, request, pk):
+        # Whoever the task was given to may tick it, even on someone else's opportunity.
+        visible = Opportunity.objects.visible_to(request.user)
+        tasks = Task.objects.filter(Q(opportunity__in=visible) | Q(assigned_to=request.user))
+        task = get_object_or_404(tasks, pk=pk)
+        task.toggle_done()
+        next_url = request.POST.get("next")
+        if next_url and next_url.startswith("/") and not next_url.startswith("//"):
+            return redirect(next_url)
+        return redirect(task.parent_url)
