@@ -1,0 +1,73 @@
+/* Layout dimensions: change these to resize the navbar and sidebar everywhere. */
+:root {
+  --app-navbar-height: 3.5rem;
+  --app-sidebar-width: 15rem;
+}
+
+/* Navbar */
+.app-navbar {
+  position: sticky;
+  top: 0;
+  z-index: 1030;
+  height: var(--app-navbar-height);
+}
+
+.app-logo {
+  font-size: 1.4rem;
+  line-height: 1;
+}
+
+/* Shell: sidebar + content */
+.app-shell {
+  display: flex;
+}
+
+.app-content {
+  flex: 1;
+  min-width: 0;
+  padding: 1.5rem;
+}
+
+@media (min-width: 992px) {
+  .app-sidebar {
+    position: sticky;
+    top: var(--app-navbar-height);
+    flex-shrink: 0;
+    width: var(--app-sidebar-width);
+    height: calc(100vh - var(--app-navbar-height));
+    overflow-y: auto;
+    border-right: var(--bs-border-width) solid var(--bs-border-color);
+  }
+
+  .app-sidebar .offcanvas-body {
+    padding: 1rem 0.75rem;
+  }
+}
+
+/* Login and other auth pages */
+.auth-page {
+  background: var(--bs-tertiary-bg);
+}
+
+.auth-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 100vh;
+  padding: 1rem;
+}
+
+.auth-card {
+  width: 100%;
+  max-width: 24rem;
+}
+
+.auth-logo .app-logo {
+  font-size: 2.5rem;
+}
+
+/* Welcome pages */
+.welcome-icon {
+  font-size: 3rem;
+  color: var(--bs-primary);
+}

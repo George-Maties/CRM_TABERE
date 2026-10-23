@@ -1,0 +1,5 @@
+<a class="nav-link d-flex align-items-center gap-2{% if item.active %} active{% endif %}"
+   href="{{ item.url }}"{% if item.active %} aria-current="page"{% endif %}>
+  <i class="bi {{ item.icon }}"></i>
+  <span>{{ item.label }}</span>
+</a>

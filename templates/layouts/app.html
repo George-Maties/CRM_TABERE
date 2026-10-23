@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% comment %}
+  Layout for logged-in pages: navbar on top, sidebar on the left.
+  Pages extend this and fill {% block title %} and {% block content %}.
+{% endcomment %}
+
+{% block body %}
+  {% include "navbar/navbar.html" %}
+  <div class="app-shell">
+    {% include "sidebar/sidebar.html" %}
+    <main class="app-content">
+      {% include "components/messages.html" %}
+      {% block content %}{% endblock %}
+    </main>
+  </div>
+{% endblock %}

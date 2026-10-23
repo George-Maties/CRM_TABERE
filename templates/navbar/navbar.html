@@ -1,0 +1,13 @@
+<nav class="navbar bg-body border-bottom app-navbar">
+  <div class="container-fluid">
+    <button class="btn btn-link text-body d-lg-none me-2 px-1" type="button"
+            data-bs-toggle="offcanvas" data-bs-target="#app-sidebar"
+            aria-controls="app-sidebar" aria-label="Meniu">
+      <i class="bi bi-list fs-4"></i>
+    </button>
+    {% include "navbar/brand.html" %}
+    <div class="ms-auto">
+      {% include "navbar/user_menu.html" %}
+    </div>
+  </div>
+</nav>

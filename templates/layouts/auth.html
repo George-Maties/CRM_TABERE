@@ -1,0 +1,16 @@
+{% extends "base.html" %}
+{% comment %}
+  Layout for pages without navbar/sidebar (login, password reset): a centered card.
+{% endcomment %}
+
+{% block body_class %}auth-page{% endblock %}
+
+{% block body %}
+  <main class="auth-wrapper">
+    <div class="card auth-card shadow-sm">
+      <div class="card-body p-4">
+        {% block content %}{% endblock %}
+      </div>
+    </div>
+  </main>
+{% endblock %}

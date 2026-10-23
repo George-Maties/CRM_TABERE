@@ -49,15 +49,38 @@ ruff check . && ruff format .   # lint + formatare
 ## Structura
 
 ```
-config/          setări, URL-uri, WSGI
-apps/accounts/   utilizatorul custom (User)
-apps/core/       lucruri comune (health check)
-templates/       șabloane HTML
-static/          CSS / JS / imagini
-deploy/          systemd, nginx, gunicorn, script de deploy
+config/                setări, URL-uri, WSGI
+apps/accounts/         utilizatorul custom (User), login / logout
+apps/core/             lucruri comune: health check, meniul din sidebar
+apps/wall/             secțiunea Wall
+apps/oportunitati/     secțiunea Oportunități
+apps/contacte/         secțiunea Contacte
+templates/
+  base.html            scheletul HTML (CSS, JS)
+  layouts/app.html     pagini cu navbar + sidebar
+  layouts/auth.html    pagini fără meniu (login)
+  navbar/              navbar.html, brand.html, user_menu.html
+  sidebar/             sidebar.html, item.html
+  components/          bucăți refolosibile (mesaje, logo, pagina de bun venit)
+  <aplicație>/         template-urile fiecărei aplicații
+static/css/app.css     stilurile proprii (dimensiunile navbar / sidebar sunt variabile CSS)
+static/vendor/         Bootstrap 5.3.8 și Bootstrap Icons 1.13.1, salvate local
+deploy/                systemd, nginx, gunicorn, script de deploy
 ```
 
-Toată configurația vine din `.env` (vezi `.env.example`).
+Toată configurația vine din `.env` (vezi `.env.example`). Toate paginile cer autentificare, cu excepția celor marcate cu `@login_not_required`.
+
+### O secțiune nouă în sidebar
+
+1. `python manage.py startapp <nume> apps/<nume>` și adăugați `apps.<nume>` în `INSTALLED_APPS`
+2. În `apps/<nume>/apps.py` declarați butonul:
+   ```python
+   menu_items = (MenuItem(label="Nume", url_name="<nume>:welcome", icon="bi-star", order=40),)
+   ```
+   `order` stabilește poziția, iar `permission="app.view_model"` ascunde butonul pentru cine nu are dreptul.
+3. Adăugați `path("<nume>/", include("apps.<nume>.urls"))` în `config/urls.py`
+
+Iconițele disponibile sunt pe https://icons.getbootstrap.com/.
 
 ## Producție (VPS)
 

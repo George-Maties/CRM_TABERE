@@ -1,0 +1,19 @@
+{% comment %}
+  Buttons come from each app's AppConfig.menu_items (see apps/core/navigation.py).
+  On large screens it is a fixed column; on phones it slides in from the navbar button.
+{% endcomment %}
+<aside class="offcanvas-lg offcanvas-start app-sidebar" tabindex="-1" id="app-sidebar"
+       aria-labelledby="app-sidebar-label">
+  <div class="offcanvas-header border-bottom">
+    <h5 class="offcanvas-title" id="app-sidebar-label">{{ site_name }}</h5>
+    <button type="button" class="btn-close" data-bs-dismiss="offcanvas"
+            data-bs-target="#app-sidebar" aria-label="Închide"></button>
+  </div>
+  <div class="offcanvas-body">
+    <nav class="nav nav-pills flex-column w-100 gap-1">
+      {% for item in sidebar_items %}
+        {% include "sidebar/item.html" %}
+      {% endfor %}
+    </nav>
+  </div>
+</aside>

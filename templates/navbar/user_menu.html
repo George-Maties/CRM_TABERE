@@ -1,0 +1,25 @@
+<div class="dropdown">
+  <button class="btn btn-link text-body text-decoration-none dropdown-toggle" type="button"
+          data-bs-toggle="dropdown" aria-expanded="false">
+    <i class="bi bi-person-circle me-1"></i>
+    <span class="d-none d-sm-inline">{{ user.get_full_name|default:user.get_username }}</span>
+  </button>
+  <ul class="dropdown-menu dropdown-menu-end">
+    {% if user.is_staff %}
+      <li>
+        <a class="dropdown-item" href="{% url 'admin:index' %}">
+          <i class="bi bi-gear me-2"></i>Administrare
+        </a>
+      </li>
+      <li><hr class="dropdown-divider"></li>
+    {% endif %}
+    <li>
+      <form method="post" action="{% url 'accounts:logout' %}">
+        {% csrf_token %}
+        <button type="submit" class="dropdown-item">
+          <i class="bi bi-box-arrow-right me-2"></i>Deconectare
+        </button>
+      </form>
+    </li>
+  </ul>
+</div>
