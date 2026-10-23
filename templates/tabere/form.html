@@ -12,10 +12,7 @@
         <div class="col-sm-6">{% include "components/form_field.html" with field=form.start_date %}</div>
         <div class="col-sm-6">{% include "components/form_field.html" with field=form.end_date %}</div>
       </div>
-      <div class="row">
-        <div class="col-sm-7">{% include "components/form_field.html" with field=form.accommodation %}</div>
-        <div class="col-sm-5">{% include "components/form_field.html" with field=form.location %}</div>
-      </div>
+      {% include "components/form_field.html" with field=form.accommodation %}
       {% include "components/form_field.html" with field=form.notes %}
       <div class="form-actions">
         <button type="submit" class="btn btn-primary">{% if object %}Salvează modificările{% else %}Creează tabăra{% endif %}</button>

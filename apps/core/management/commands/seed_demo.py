@@ -6,6 +6,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from apps.accounts.roles import FOUNDER, SELLER
+from apps.cazari.models import Accommodation
 from apps.contacte.models import Contact
 from apps.oportunitati.models import Note, Opportunity, Status
 from apps.oportunitati.models import Task as OpportunityTask
@@ -27,28 +28,31 @@ CONTACTS = [
     ("Ioana Marinescu", Contact.Kind.PARENT, "0700 100 210", "ioana.marinescu"),
 ]
 
+# Demo accommodations (found again by name): name, town, seats, contact person, phone
+ACCOMMODATIONS = {
+    "bradul": ("Pensiunea Bradul", "Bran", 40, "Ioan Bradu", "0268 000 101"),
+    "clabucet": ("Cabana Clăbucet", "Predeal", 32, "Maria Stoica", "0268 000 202"),
+}
+
 # Demo camps are found again by name; --reset removes those left without participants.
 CAMPS = {
     "vara2026": (
         "Tabăra de vară 2026, seria 2",
         date(2026, 7, 12),
         date(2026, 7, 19),
-        "Pensiunea Bradul",
-        "Bran",
+        "bradul",
     ),
     "iarna2027": (
         "Tabăra de iarnă 2027",
         date(2027, 2, 10),
         date(2027, 2, 16),
-        "Cabana Clăbucet",
-        "Predeal",
+        "clabucet",
     ),
     "vara2027": (
         "Tabăra de vară 2027, seria 1",
         date(2027, 7, 4),
         date(2027, 7, 11),
-        "Pensiunea Bradul",
-        "Bran",
+        "bradul",
     ),
 }
 
@@ -201,17 +205,28 @@ class Command(BaseCommand):
         now = timezone.now()
         today = timezone.localdate()
 
+        accommodations = {
+            key: Accommodation.objects.get_or_create(
+                name=name,
+                defaults={
+                    "city": city,
+                    "capacity": capacity,
+                    "contact_name": contact_name,
+                    "phone": phone,
+                },
+            )[0]
+            for key, (name, city, capacity, contact_name, phone) in ACCOMMODATIONS.items()
+        }
         camps = {
             key: Camp.objects.get_or_create(
                 name=name,
                 defaults={
                     "start_date": start,
                     "end_date": end,
-                    "accommodation": accommodation,
-                    "location": location,
+                    "accommodation": accommodations[accommodation],
                 },
             )[0]
-            for key, (name, start, end, accommodation, location) in CAMPS.items()
+            for key, (name, start, end, accommodation) in CAMPS.items()
         }
 
         contacts = [

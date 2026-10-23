@@ -11,9 +11,15 @@ class Camp(models.Model):
     name = models.CharField("nume", max_length=200)
     start_date = models.DateField("începe pe")
     end_date = models.DateField("se termină pe", null=True, blank=True)
-    # Where the children stay (the guesthouse) and the town it is in
-    accommodation = models.CharField("cazare", max_length=200, blank=True)
-    location = models.CharField("oraș", max_length=200, blank=True)
+    # Where the children stay, from the Cazări list (which also has the town)
+    accommodation = models.ForeignKey(
+        "cazari.Accommodation",
+        on_delete=models.PROTECT,
+        null=True,
+        blank=True,
+        related_name="camps",
+        verbose_name="cazare",
+    )
     notes = models.TextField("observații", blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,

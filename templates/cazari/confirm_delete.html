@@ -1,0 +1,25 @@
+{% extends "layouts/page.html" %}
+
+{% block title %}Șterge {{ object.name }}{% endblock %}
+{% block page_title %}Ștergeți cazarea?{% endblock %}
+
+{% block page_content %}
+  <form class="card form-card" method="post">
+    <div class="card-body">
+      {% csrf_token %}
+      {% if object.camps.exists %}
+        <div class="alert alert-warning">
+          Cazarea <strong>{{ object.name }}</strong> e folosită de tabere și nu poate fi ștearsă.
+          Alegeți întâi altă cazare pentru acele tabere.
+        </div>
+        <a class="btn btn-outline-secondary" href="{{ object.get_absolute_url }}">Înapoi la cazare</a>
+      {% else %}
+        <p>Cazarea <strong>{{ object.name }}</strong> va fi ștearsă definitiv.</p>
+        <div class="form-actions">
+          <button type="submit" class="btn btn-danger">Da, șterge cazarea</button>
+          <a class="btn btn-link" href="{{ object.get_absolute_url }}">Renunță</a>
+        </div>
+      {% endif %}
+    </div>
+  </form>
+{% endblock %}

@@ -7,9 +7,22 @@ from apps.contacte.models import Contact
 from apps.oportunitati.models import Opportunity
 
 
+@pytest.fixture(autouse=True)
+def fast_passwords(settings):
+    """Tests create many users; the production password hasher is slow on purpose."""
+    settings.PASSWORD_HASHERS = ["django.contrib.auth.hashers.MD5PasswordHasher"]
+
+
+@pytest.fixture(scope="session")
+def django_db_setup(django_db_setup, django_db_blocker):
+    """Create the roles once, in the test database; every test starts from them."""
+    with django_db_blocker.unblock():
+        call_command("setup_roles", stdout=open("/dev/null", "w"))
+
+
 @pytest.fixture
 def roles(db):
-    call_command("setup_roles", stdout=open("/dev/null", "w"))
+    """The built-in roles (created once per run by django_db_setup)."""
 
 
 def _user_with_role(django_user_model, username, role):

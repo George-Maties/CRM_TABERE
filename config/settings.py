@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "apps.oportunitati",
     "apps.contacte",
     "apps.tabere",
+    "apps.cazari",
 ]
 
 MIDDLEWARE = [

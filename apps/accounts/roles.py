@@ -49,6 +49,11 @@ ROLES = {
         "tabere.change_camp",
         "tabere.delete_camp",
         "tabere.delete_task",
+        # The accommodation list (Cazări) is only for founders
+        "cazari.view_accommodation",
+        "cazari.add_accommodation",
+        "cazari.change_accommodation",
+        "cazari.delete_accommodation",
     ],
     # Sees only the contacts assigned to them and the opportunities they own; cannot delete.
     SELLER: _SELLER_PERMISSIONS,

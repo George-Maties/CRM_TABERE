@@ -10,8 +10,8 @@ class TaskInline(admin.TabularInline):
 
 @admin.register(Camp)
 class CampAdmin(admin.ModelAdmin):
-    list_display = ["name", "start_date", "end_date", "accommodation", "location"]
-    search_fields = ["name", "accommodation", "location"]
+    list_display = ["name", "start_date", "end_date", "accommodation"]
+    search_fields = ["name", "accommodation__name", "accommodation__city"]
     inlines = [TaskInline]
 
 

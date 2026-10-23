@@ -9,17 +9,24 @@ from .models import Camp, Child, Task
 class CampForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Camp
-        fields = ["name", "start_date", "end_date", "accommodation", "location", "notes"]
+        fields = ["name", "start_date", "end_date", "accommodation", "notes"]
         help_texts = {
             "name": "De exemplu: Tabăra de vară 2027, seria 1",
-            "accommodation": "Pensiunea sau hotelul, de exemplu: Pensiunea Bradul",
-            "location": "De exemplu: Bran",
+            "accommodation": "Din lista de cazări. Una nouă o adaugă un fondator, din Cazări.",
         }
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "end_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "notes": forms.Textarea(attrs={"rows": 4}),
         }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        accommodation = self.fields["accommodation"]
+        accommodation.empty_label = "Nealeasă încă"
+        accommodation.label_from_instance = lambda place: (
+            f"{place} · {place.capacity} locuri" if place.capacity else str(place)
+        )
 
     def clean(self):
         cleaned = super().clean()

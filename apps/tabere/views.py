@@ -23,6 +23,7 @@ class CampListView(PermissionRequiredMixin, ListView):
         return (
             super()
             .get_queryset()
+            .select_related("accommodation")
             .annotate(
                 participant_count=Count("opportunities", filter=Q(opportunities__status=Status.WON))
             )

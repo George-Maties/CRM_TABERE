@@ -30,9 +30,9 @@
                 <td><a class="fw-semibold row-link" href="{{ camp.get_absolute_url }}">{{ camp.name }}</a></td>
                 <td class="text-nowrap">{% include "tabere/_period.html" %}</td>
                 <td class="d-none d-md-table-cell">
-                  {% if camp.accommodation or camp.location %}
-                    {{ camp.accommodation }}
-                    {% if camp.location %}<div class="small text-body-secondary">{{ camp.location }}</div>{% endif %}
+                  {% if camp.accommodation %}
+                    {{ camp.accommodation.name }}
+                    {% if camp.accommodation.city %}<div class="small text-body-secondary">{{ camp.accommodation.city }}</div>{% endif %}
                   {% else %}<span class="text-body-secondary">—</span>{% endif %}
                 </td>
                 <td class="text-end">{{ camp.participant_count }}</td>

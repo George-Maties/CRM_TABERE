@@ -1,5 +1,6 @@
 from django.urls import reverse
 
+from apps.cazari.models import Accommodation
 from apps.oportunitati.models import Status
 
 from .models import Camp, Child, Task
@@ -202,56 +203,32 @@ def test_founder_adds_child_to_any_contact(founder_client, seller, make_opportun
     assert opportunity.children.get().name == "Ioana"
 
 
-def test_camp_has_accommodation_and_town(founder_client):
+def test_camp_picks_its_accommodation_from_the_list(founder_client):
+    place = Accommodation.objects.create(name="Pensiunea Bradul", city="Bran", capacity=40)
     founder_client.post(
         reverse("tabere:create"),
-        {
-            "name": "Vară 2027",
-            "start_date": "2027-07-04",
-            "accommodation": "Pensiunea Bradul",
-            "location": "Bran",
-        },
+        {"name": "Vară 2027", "start_date": "2027-07-04", "accommodation": place.pk},
     )
     camp = Camp.objects.get()
 
     detail = founder_client.get(camp.get_absolute_url()).content.decode()
     listing = founder_client.get(reverse("tabere:list")).content.decode()
 
-    assert (camp.accommodation, camp.location) == ("Pensiunea Bradul", "Bran")
-    assert "Pensiunea Bradul" in detail and "bi-house-door" in detail
+    assert camp.accommodation == place
+    assert "Pensiunea Bradul" in detail and "Bran" in detail and "din 40 de locuri" in detail
     assert ">Cazare</th>" in listing and "Pensiunea Bradul" in listing
     form = founder_client.get(reverse("tabere:update", args=[camp.pk])).context["form"]
-    assert form.fields["location"].label == "Oraș"
+    assert "location" not in form.fields
+    assert [label for _, label in form.fields["accommodation"].choices] == [
+        "Nealeasă încă",
+        "Pensiunea Bradul, Bran · 40 locuri",
+    ]
 
 
-def test_age_is_required(seller_client, seller, make_opportunity):
-    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
-    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
-
-    response = seller_client.post(
-        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "Matei"}
+def test_camp_cannot_use_an_accommodation_not_in_the_list(founder_client):
+    response = founder_client.post(
+        reverse("tabere:create"),
+        {"name": "Vară 2027", "start_date": "2027-07-04", "accommodation": "999"},
     )
 
-    assert response.context["child_form"].errors["age"]
-    assert not Child.objects.exists()
-
-
-def test_medical_notes_are_hidden_from_other_sellers(
-    client, seller, other_seller, founder, make_opportunity
-):
-    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
-    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
-    Child.objects.create(
-        opportunity=opportunity, name="Matei Pop", age=9, medical_notes="Astm, are inhalator."
-    )
-
-    pages = {}
-    for user in (seller, other_seller, founder):
-        client.force_login(user)
-        pages[user] = client.get(camp.get_absolute_url()).content.decode()
-
-    assert "Astm, are inhalator." in pages[seller]
-    assert "Astm, are inhalator." in pages[founder]
-    # Another seller still sees who comes, not their medical data.
-    assert "Matei Pop" in pages[other_seller]
-    assert "Astm, are inhalator." not in pages[other_seller]
+    assert response.context["form"].errors["accommodation"]

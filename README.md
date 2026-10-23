@@ -72,6 +72,7 @@ apps/wall/             secțiunea Wall
 apps/oportunitati/     secțiunea Oportunități
 apps/contacte/         secțiunea Contacte
 apps/tabere/           secțiunea Tabere (deocamdată: tabere, participanți, sarcini)
+apps/cazari/           secțiunea Cazări (pensiunile folosite de tabere; doar fondatori)
 templates/
   base.html            scheletul HTML (CSS, JS)
   layouts/app.html     pagini cu navbar + sidebar

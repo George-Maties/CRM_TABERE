@@ -6,8 +6,10 @@
 {% block page_subtitle %}
   <p class="page-subtitle">
     <span><i class="bi bi-calendar-event" aria-hidden="true"></i> {% include "tabere/_period.html" %}</span>
-    {% if camp.accommodation %}<span><i class="bi bi-house-door" aria-hidden="true"></i> {{ camp.accommodation }}</span>{% endif %}
-    {% if camp.location %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ camp.location }}</span>{% endif %}
+    {% if camp.accommodation %}
+      <span><i class="bi bi-house-door" aria-hidden="true"></i> {{ camp.accommodation.name }}</span>
+      {% if camp.accommodation.city %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ camp.accommodation.city }}</span>{% endif %}
+    {% endif %}
   </p>
 {% endblock %}
 
@@ -38,7 +40,7 @@
     <div class="col-xl-8">
       <section class="card">
         <div class="card-body pb-0">
-          <h2 class="card-title-sm">Participanți <span class="count-pill">{{ participants|length }}</span>{% if child_count %} <span class="text-body-secondary small fw-normal">{{ child_count|plural:"copil,copii" }}</span>{% endif %}</h2>
+          <h2 class="card-title-sm">Participanți <span class="count-pill">{{ participants|length }}</span>{% if child_count or camp.accommodation.capacity %} <span class="text-body-secondary small fw-normal">{{ child_count|plural:"copil,copii" }}{% if camp.accommodation.capacity %} din {{ camp.accommodation.capacity|plural:"loc,locuri" }}{% endif %}</span>{% endif %}</h2>
         </div>
         {% if participants %}
           <div class="table-responsive">

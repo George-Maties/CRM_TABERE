@@ -4,8 +4,8 @@ from django.urls import reverse
 
 from apps.core.navigation import MenuItem, sidebar_items
 
-SECTIONS = ["wall:index", "oportunitati:list", "contacte:list", "tabere:list"]
-MENU = ["Wall", "Oportunități", "Contacte", "Tabere"]
+SECTIONS = ["wall:index", "oportunitati:list", "contacte:list", "tabere:list", "cazari:list"]
+MENU = ["Wall", "Oportunități", "Contacte", "Tabere", "Cazări"]
 
 
 @pytest.mark.django_db
@@ -54,7 +54,8 @@ def test_sidebar_by_role(rf, django_user_model, seller):
     request = rf.get("/")
 
     request.user = seller
-    assert [item["label"] for item in sidebar_items(request)] == MENU
+    # Cazări is only for founders and admins.
+    assert [item["label"] for item in sidebar_items(request)] == MENU[:-1]
 
     request.user = django_user_model.objects.create_user(username="fara-rol")
     assert [item["label"] for item in sidebar_items(request)] == ["Wall"]

@@ -17,6 +17,7 @@ urlpatterns = [
     path("oportunitati/", include("apps.oportunitati.urls")),
     path("contacte/", include("apps.contacte.urls")),
     path("tabere/", include("apps.tabere.urls")),
+    path("cazari/", include("apps.cazari.urls")),
 ]
 
 if settings.DEBUG:
