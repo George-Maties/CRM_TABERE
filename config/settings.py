@@ -103,4 +103,7 @@ LOGGING = {
     "disable_existing_loggers": False,
     "handlers": {"console": {"class": "logging.StreamHandler"}},
     "root": {"handlers": ["console"], "level": env("LOG_LEVEL", default="INFO")},
+    # Django's default config gives "django" its own console handler; without this,
+    # every message is printed twice (once there, once via root).
+    "loggers": {"django": {"handlers": ["console"], "propagate": False}},
 }
