@@ -13,11 +13,22 @@
                value="{{ form.name.value|default:'' }}" maxlength="200" autocomplete="off" required>
         {% for error in form.name.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
       </div>
-      <div class="child-form-field child-form-date">
-        <label class="form-label small" for="copil-nastere-{{ opportunity.pk }}">Data nașterii</label>
-        <input class="form-control form-control-sm{% if form.birth_date.errors %} is-invalid{% endif %}" type="date" name="birth_date" id="copil-nastere-{{ opportunity.pk }}"
-               value="{{ form.birth_date.value|default:'' }}">
-        {% for error in form.birth_date.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      <div class="child-form-field child-form-age">
+        <label class="form-label small" for="copil-varsta-{{ opportunity.pk }}">Vârsta <span class="text-danger" aria-hidden="true">*</span></label>
+        <input class="form-control form-control-sm{% if form.age.errors %} is-invalid{% endif %}" type="number" name="age" id="copil-varsta-{{ opportunity.pk }}"
+               value="{{ form.age.value|default:'' }}" min="1" max="30" inputmode="numeric" required>
+        {% for error in form.age.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="child-form-field child-form-city">
+        <label class="form-label small" for="copil-oras-{{ opportunity.pk }}">Oraș</label>
+        <input class="form-control form-control-sm{% if form.city.errors %} is-invalid{% endif %}" type="text" name="city" id="copil-oras-{{ opportunity.pk }}"
+               value="{{ form.city.value|default:'' }}" maxlength="200" autocomplete="off">
+        {% for error in form.city.errors %}<div class="invalid-feedback d-block">{{ error }}</div>{% endfor %}
+      </div>
+      <div class="child-form-field child-form-medical">
+        <label class="form-label small" for="copil-medical-{{ opportunity.pk }}">Probleme medicale</label>
+        <textarea class="form-control form-control-sm" name="medical_notes" id="copil-medical-{{ opportunity.pk }}" rows="2"
+                  placeholder="Alergii, tratamente, alte lucruri de știut. Gol dacă nu are.">{{ form.medical_notes.value|default:'' }}</textarea>
       </div>
       <div class="child-form-actions">
         <button type="submit" class="btn btn-primary btn-sm">Adaugă copilul</button>

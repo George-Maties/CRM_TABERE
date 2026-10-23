@@ -38,7 +38,7 @@ class CampDetailView(PermissionRequiredMixin, DetailView):
         participants = list(
             self.object.opportunities.filter(status=Status.WON)
             .select_related("contact", "owner", "camp")
-            .prefetch_related("children__opportunity__camp")
+            .prefetch_related("children")
             .with_titles()
         )
         visible_ids = set(

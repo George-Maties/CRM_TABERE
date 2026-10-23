@@ -1169,8 +1169,38 @@ body {
   margin-bottom: 0.25rem;
 }
 
-.child-form-date {
-  flex: 0 1 10rem;
+.child-form-age {
+  flex: 0 0 5.5rem;
+}
+
+.child-form-city {
+  flex: 0 1 11rem;
+}
+
+/* Medical notes take a whole line, under name, age and town */
+.child-form-medical {
+  flex-basis: 100%;
+}
+
+.child-facts {
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.25rem 0.75rem;
+}
+
+.child-medical {
+  display: flex;
+  gap: 0.375rem;
+  max-width: 32rem;
+  margin: 0.25rem 0 0 2.25rem;
+  font-size: 0.875rem;
+  color: var(--bs-danger-text-emphasis);
+  white-space: pre-line;
+}
+
+.child-medical .bi {
+  flex-shrink: 0;
+  margin-top: 0.125rem;
 }
 
 .child-form-actions {

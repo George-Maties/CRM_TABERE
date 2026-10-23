@@ -1,7 +1,8 @@
 from django.conf import settings
+from django.core.validators import MaxValueValidator, MinValueValidator
 from django.db import models
 from django.urls import reverse
-from django.utils import formats, timezone
+from django.utils import formats
 
 from apps.core.models import TaskBase
 
@@ -10,7 +11,9 @@ class Camp(models.Model):
     name = models.CharField("nume", max_length=200)
     start_date = models.DateField("începe pe")
     end_date = models.DateField("se termină pe", null=True, blank=True)
-    location = models.CharField("locație", max_length=200, blank=True)
+    # Where the children stay (the guesthouse) and the town it is in
+    accommodation = models.CharField("cazare", max_length=200, blank=True)
+    location = models.CharField("oraș", max_length=200, blank=True)
     notes = models.TextField("observații", blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -67,7 +70,15 @@ class Child(models.Model):
         verbose_name="oportunitate",
     )
     name = models.CharField("numele copilului", max_length=200)
-    birth_date = models.DateField("data nașterii", null=True, blank=True)
+    # Required in the form; empty only for children added before the age was asked
+    age = models.PositiveSmallIntegerField(
+        "vârsta",
+        null=True,
+        validators=[MinValueValidator(1), MaxValueValidator(30)],
+    )
+    city = models.CharField("oraș", max_length=200, blank=True)
+    # Medical data about a minor: shown only to whoever works the contact (see the camp page).
+    medical_notes = models.TextField("probleme medicale", blank=True)
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -84,13 +95,3 @@ class Child(models.Model):
 
     def __str__(self):
         return self.name
-
-    @property
-    def age(self):
-        """Age in whole years when the camp starts (today, if not in a camp)."""
-        if self.birth_date is None:
-            return None
-        camp = self.opportunity.camp
-        on = camp.start_date if camp else timezone.localdate()
-        born = self.birth_date
-        return on.year - born.year - ((on.month, on.day) < (born.month, born.day))

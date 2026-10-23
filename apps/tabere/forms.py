@@ -9,8 +9,12 @@ from .models import Camp, Child, Task
 class CampForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Camp
-        fields = ["name", "start_date", "end_date", "location", "notes"]
-        help_texts = {"name": "De exemplu: Tabăra de vară 2027, seria 1"}
+        fields = ["name", "start_date", "end_date", "accommodation", "location", "notes"]
+        help_texts = {
+            "name": "De exemplu: Tabăra de vară 2027, seria 1",
+            "accommodation": "Pensiunea sau hotelul, de exemplu: Pensiunea Bradul",
+            "location": "De exemplu: Bran",
+        }
         widgets = {
             "start_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
             "end_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
@@ -40,8 +44,20 @@ class TaskForm(BootstrapFormMixin, forms.ModelForm):
 class ChildForm(BootstrapFormMixin, forms.ModelForm):
     class Meta:
         model = Child
-        fields = ["name", "birth_date"]
+        fields = ["name", "age", "city", "medical_notes"]
         widgets = {
             "name": forms.TextInput(attrs={"autocomplete": "off"}),
-            "birth_date": forms.DateInput(attrs={"type": "date"}, format="%Y-%m-%d"),
+            "age": forms.NumberInput(attrs={"min": 1, "max": 30, "inputmode": "numeric"}),
+            "city": forms.TextInput(attrs={"autocomplete": "off"}),
+            "medical_notes": forms.Textarea(attrs={"rows": 2}),
         }
+        error_messages = {
+            "age": {
+                "min_value": "Vârsta trebuie să fie cel puțin 1.",
+                "max_value": "Vârsta nu poate fi mai mare de 30.",
+            }
+        }
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.fields["age"].required = True

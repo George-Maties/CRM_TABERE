@@ -20,7 +20,7 @@
             <tr>
               <th scope="col">Tabăra</th>
               <th scope="col">Perioada</th>
-              <th scope="col" class="d-none d-md-table-cell">Locație</th>
+              <th scope="col" class="d-none d-md-table-cell">Cazare</th>
               <th scope="col" class="text-end">Participanți</th>
             </tr>
           </thead>
@@ -29,7 +29,12 @@
               <tr>
                 <td><a class="fw-semibold row-link" href="{{ camp.get_absolute_url }}">{{ camp.name }}</a></td>
                 <td class="text-nowrap">{% include "tabere/_period.html" %}</td>
-                <td class="d-none d-md-table-cell text-body-secondary">{{ camp.location|default:"—" }}</td>
+                <td class="d-none d-md-table-cell">
+                  {% if camp.accommodation or camp.location %}
+                    {{ camp.accommodation }}
+                    {% if camp.location %}<div class="small text-body-secondary">{{ camp.location }}</div>{% endif %}
+                  {% else %}<span class="text-body-secondary">—</span>{% endif %}
+                </td>
                 <td class="text-end">{{ camp.participant_count }}</td>
               </tr>
             {% endfor %}

@@ -29,9 +29,27 @@ CONTACTS = [
 
 # Demo camps are found again by name; --reset removes those left without participants.
 CAMPS = {
-    "vara2026": ("Tabăra de vară 2026, seria 2", date(2026, 7, 12), date(2026, 7, 19), "Bran"),
-    "iarna2027": ("Tabăra de iarnă 2027", date(2027, 2, 10), date(2027, 2, 16), "Predeal"),
-    "vara2027": ("Tabăra de vară 2027, seria 1", date(2027, 7, 4), date(2027, 7, 11), "Bran"),
+    "vara2026": (
+        "Tabăra de vară 2026, seria 2",
+        date(2026, 7, 12),
+        date(2026, 7, 19),
+        "Pensiunea Bradul",
+        "Bran",
+    ),
+    "iarna2027": (
+        "Tabăra de iarnă 2027",
+        date(2027, 2, 10),
+        date(2027, 2, 16),
+        "Cabana Clăbucet",
+        "Predeal",
+    ),
+    "vara2027": (
+        "Tabăra de vară 2027, seria 1",
+        date(2027, 7, 4),
+        date(2027, 7, 11),
+        "Pensiunea Bradul",
+        "Bran",
+    ),
 }
 
 # Won opportunities (by index in OPPORTUNITIES) and the camp they joined
@@ -186,9 +204,14 @@ class Command(BaseCommand):
         camps = {
             key: Camp.objects.get_or_create(
                 name=name,
-                defaults={"start_date": start, "end_date": end, "location": location},
+                defaults={
+                    "start_date": start,
+                    "end_date": end,
+                    "accommodation": accommodation,
+                    "location": location,
+                },
             )[0]
-            for key, (name, start, end, location) in CAMPS.items()
+            for key, (name, start, end, accommodation, location) in CAMPS.items()
         }
 
         contacts = [

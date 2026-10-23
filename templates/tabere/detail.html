@@ -6,6 +6,7 @@
 {% block page_subtitle %}
   <p class="page-subtitle">
     <span><i class="bi bi-calendar-event" aria-hidden="true"></i> {% include "tabere/_period.html" %}</span>
+    {% if camp.accommodation %}<span><i class="bi bi-house-door" aria-hidden="true"></i> {{ camp.accommodation }}</span>{% endif %}
     {% if camp.location %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ camp.location }}</span>{% endif %}
   </p>
 {% endblock %}
@@ -76,9 +77,17 @@
                     <tr class="child-row">
                       <td>
                         <span class="child-name"><i class="bi bi-arrow-return-right" aria-hidden="true"></i>{{ child.name }}</span>
+                        {# Medical data about a minor: only for whoever works this contact #}
+                        {% if child.medical_notes and opportunity.can_edit %}
+                          <div class="child-medical"><i class="bi bi-heart-pulse" aria-hidden="true"></i><span><span class="visually-hidden">Probleme medicale: </span>{{ child.medical_notes }}</span></div>
+                        {% endif %}
                       </td>
-                      <td class="text-body-secondary text-nowrap" colspan="3">
-                        {% if child.birth_date %}<span title="Născut pe {{ child.birth_date|date:'j F Y'|lower }}">{{ child.age|plural:"an,ani" }}</span>{% else %}—{% endif %}
+                      <td class="text-body-secondary" colspan="3">
+                        <span class="child-facts">
+                          {% if child.age %}<span>{{ child.age|plural:"an,ani" }}</span>{% endif %}
+                          {% if child.city %}<span><i class="bi bi-geo-alt" aria-hidden="true"></i> {{ child.city }}</span>{% endif %}
+                          {% if not child.age and not child.city %}—{% endif %}
+                        </span>
                       </td>
                       <td class="col-actions">
                         {% if opportunity.can_edit and perms.tabere.delete_child %}

@@ -107,19 +107,19 @@ def test_seller_adds_child_under_their_contact(seller_client, seller, make_oppor
 
     response = seller_client.post(
         reverse("tabere:child-add", args=[opportunity.pk]),
-        {"name": "Matei Pop", "birth_date": "2017-09-01"},
+        {"name": "Matei Pop", "age": "9", "city": "Brașov", "medical_notes": "Alergic la arahide."},
     )
 
     assert response.url == f"{camp.get_absolute_url()}#participant-{opportunity.pk}"
     child = Child.objects.get()
     assert child.opportunity == opportunity
     assert child.name == "Matei Pop" and child.created_by == seller
-    # Age when the camp starts: 9 (turns 10 in September)
-    assert child.age == 9
+    assert (child.age, child.city, child.medical_notes) == (9, "Brașov", "Alergic la arahide.")
     page = seller_client.get(camp.get_absolute_url())
     assert page.context["child_count"] == 1
     html = page.content.decode()
     assert 'class="child-row"' in html and "Matei Pop" in html and "9 ani" in html
+    assert "Brașov" in html and "Alergic la arahide." in html
     assert f'data-bs-target="#copil-{opportunity.pk}"' in html
 
 
@@ -127,7 +127,9 @@ def test_contact_can_bring_several_children(seller_client, seller, make_opportun
     camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
     opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
     for name in ("Matei Pop", "Ana Pop"):
-        seller_client.post(reverse("tabere:child-add", args=[opportunity.pk]), {"name": name})
+        seller_client.post(
+            reverse("tabere:child-add", args=[opportunity.pk]), {"name": name, "age": "8"}
+        )
 
     response = seller_client.get(camp.get_absolute_url())
 
@@ -143,12 +145,13 @@ def test_child_without_name_reopens_the_form_with_the_error(
     opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
 
     response = seller_client.post(
-        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "", "birth_date": ""}
+        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "", "age": "40"}
     )
 
     assert response.status_code == 200
     assert response.context["child_form_for"] == opportunity.pk
     assert response.context["child_form"].errors["name"]
+    assert response.context["child_form"].errors["age"] == ["Vârsta nu poate fi mai mare de 30."]
     assert 'class="child-form-row collapse show"' in response.content.decode()
     assert not Child.objects.exists()
 
@@ -192,6 +195,63 @@ def test_founder_adds_child_to_any_contact(founder_client, seller, make_opportun
     camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
     opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
 
-    founder_client.post(reverse("tabere:child-add", args=[opportunity.pk]), {"name": "Ioana"})
+    founder_client.post(
+        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "Ioana", "age": "11"}
+    )
 
     assert opportunity.children.get().name == "Ioana"
+
+
+def test_camp_has_accommodation_and_town(founder_client):
+    founder_client.post(
+        reverse("tabere:create"),
+        {
+            "name": "Vară 2027",
+            "start_date": "2027-07-04",
+            "accommodation": "Pensiunea Bradul",
+            "location": "Bran",
+        },
+    )
+    camp = Camp.objects.get()
+
+    detail = founder_client.get(camp.get_absolute_url()).content.decode()
+    listing = founder_client.get(reverse("tabere:list")).content.decode()
+
+    assert (camp.accommodation, camp.location) == ("Pensiunea Bradul", "Bran")
+    assert "Pensiunea Bradul" in detail and "bi-house-door" in detail
+    assert ">Cazare</th>" in listing and "Pensiunea Bradul" in listing
+    form = founder_client.get(reverse("tabere:update", args=[camp.pk])).context["form"]
+    assert form.fields["location"].label == "Oraș"
+
+
+def test_age_is_required(seller_client, seller, make_opportunity):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+
+    response = seller_client.post(
+        reverse("tabere:child-add", args=[opportunity.pk]), {"name": "Matei"}
+    )
+
+    assert response.context["child_form"].errors["age"]
+    assert not Child.objects.exists()
+
+
+def test_medical_notes_are_hidden_from_other_sellers(
+    client, seller, other_seller, founder, make_opportunity
+):
+    camp = Camp.objects.create(name="Vară 2027", start_date="2027-07-04")
+    opportunity = make_opportunity(seller, status=Status.WON, camp=camp)
+    Child.objects.create(
+        opportunity=opportunity, name="Matei Pop", age=9, medical_notes="Astm, are inhalator."
+    )
+
+    pages = {}
+    for user in (seller, other_seller, founder):
+        client.force_login(user)
+        pages[user] = client.get(camp.get_absolute_url()).content.decode()
+
+    assert "Astm, are inhalator." in pages[seller]
+    assert "Astm, are inhalator." in pages[founder]
+    # Another seller still sees who comes, not their medical data.
+    assert "Matei Pop" in pages[other_seller]
+    assert "Astm, are inhalator." not in pages[other_seller]
